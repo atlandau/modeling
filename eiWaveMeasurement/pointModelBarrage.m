@@ -2,8 +2,8 @@
 hpath = '/Users/landauland/Documents/Research/SabatiniLab/modeling/eiWaveMeasurement';
 
 % Time
-dt = 0.01; % ms
-T = 50; % ms
+dt = 0.05; % ms
+T = 1000; % ms
 tvec = 0:dt:T; %vector (ms)
 
 % Synaptic Parameters - alpha conductance
@@ -11,15 +11,15 @@ alpha = @(t, rise, fall) (t>=0).*(exp(-t/fall) - exp(-t/rise)); % only positive 
 
 excRise = 0.3; % ms
 excFall = 5; % ms
-excAmp = 2e-9; % S
+excAmp = 3e-9; % S
 excRev = 0e-3; % V
-excDelay = 0; % ms
+excFreq = 50; % 1/sec
 
 inhRise = 2.5; % ms
 inhFall = 10; % ms
-inhAmp = 2e-9; % S
+inhAmp = 3e-9; % S
 inhRev = -70e-3; % mV
-inhDelay = 0; % ms
+inhFreq = 50; % 1/sec
 
 % Total Conductance
 eConductance = excAmp * alpha(tvec-excDelay, excRise, excFall);
@@ -32,7 +32,7 @@ restPotential = -70e-3; % Volt
 
 % Stimulation Parameters
 modulationDepth = 10e-3; % mV
-modulationPeriod = 1;
+modulationPeriod = 0.5;
 holdVoltage = -35e-3 + modulationDepth/2*sin(2*pi*tvec/modulationPeriod);
 eCurrent = eConductance .* (holdVoltage - excRev);
 iCurrent = iConductance .* (holdVoltage - inhRev);
