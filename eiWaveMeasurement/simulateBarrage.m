@@ -54,25 +54,25 @@ out.iTrain = randi(T,inhNumber, 1);
 out.eConductance = zeros(1,NT); % excitatory conductance
 out.iConductance = zeros(1,NT); % inhibitory conductance
 for ne = 1:excNumber
-    currCond = excAmp * alpha(out.tvec-eTrain(ne),excRise,excFall);
+    currCond = excAmp * alpha(out.tvec-out.eTrain(ne),excRise,excFall);
     currCond(isnan(currCond))=0;
-    out.eConductance = eConductance + currCond;
+    out.eConductance = out.eConductance + currCond;
 end
 for ni = 1:inhNumber
-    currCond = inhAmp * alpha(out.tvec-iTrain(ni),inhRise,inhFall);
+    currCond = inhAmp * alpha(out.tvec-out.iTrain(ni),inhRise,inhFall);
     currCond(isnan(currCond)) = 0;
-    out.iConductance = iConductance + currCond;
+    out.iConductance = out.iConductance + currCond;
 end
 
 
 %% -- recording simulation --
 
 out.voltage = holdVoltage + modulationDepth/2*sin(2*pi*out.tvec/modulationPeriod); % voltage command
-out.eCurrent = eConductance .* (voltage - excRev); % Excitatory Current
-out.iCurrent = iConductance .* (voltage - inhRev); % Inhibitory Current
-out.synCurrent = eCurrent + iCurrent; % Total Synaptic Current
+out.eCurrent = out.eConductance .* (out.voltage - excRev); % Excitatory Current
+out.iCurrent = out.iConductance .* (out.voltage - inhRev); % Inhibitory Current
+out.synCurrent = out.eCurrent + out.iCurrent; % Total Synaptic Current
 out.nCurrent = noiseAmplitude*randn(1,NT); % Noise current
-out.totalCurrent = synCurrent + nCurrent; % Total Measured Current
+out.totalCurrent = out.synCurrent + out.nCurrent; % Total Measured Current
 
 
 %% -- perform analysis --
@@ -97,23 +97,23 @@ for naw = 1:NAW-1
     out.aLine(:,naw) = [out.aResult(:,naw,2) ones(aWindowSamples,1)] \ out.aResult(:,naw,1);
     
     % Convert to Conductances
-    cgSyn = aLine(1,naw);
-    ceSyn = -aLine(2,naw) / cgSyn;
+    cgSyn = out.aLine(1,naw);
+    ceSyn = -out.aLine(2,naw) / cgSyn;
     cgi = (cgSyn*ceSyn - cgSyn*excRev) / (inhRev - excRev);
     cge = cgSyn - cgi;
     out.estConductance(1,naw) = cge;
     out.estConductance(2,naw) = cgi;
     
     % Compute Residual
-    out.cycleConductance(:,naw) = [mean(eConductance(cSamples)); mean(iConductance(cSamples))];
+    out.cycleConductance(:,naw) = [mean(out.eConductance(cSamples)); mean(out.iConductance(cSamples))];
     out.residual(:,naw) = out.estConductance(:,naw) - out.cycleConductance(:,naw);
 end
 
 %% -- generate summary statistics --
 
-out.rmsError = sqrt(mean(residual.^2),2); % rms error
-[~,excGOF] = fit(cycleConductance(1,:)',out.estConductance(1,:)','poly1'); % linear fit to get R^2
-[~,inhGOF] = fit(cycleConductance(2,:)',out.estConductance(2,:)','poly1'); % linear fit to get R^2
+out.rmsError = sqrt(mean(out.residual.^2,2)); % rms error
+[~,excGOF] = fit(1e9*out.cycleConductance(1,:)',1e9*out.estConductance(1,:)','poly1'); % linear fit to get R^2
+[~,inhGOF] = fit(1e9*out.cycleConductance(2,:)',1e9*out.estConductance(2,:)','poly1'); % linear fit to get R^2
 out.excr2 = excGOF.rsquare;
 out.inhr2 = inhGOF.rsquare;
 

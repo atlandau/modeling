@@ -4,19 +4,6 @@ function gridSearch_barrage(modDepthIDX,modPeriodIDX,numCyclesIDX)
 % do outer loop on modulationDepth and modulationPeriod
 % everything else goes into inner loop
 
-
-%% Constant Parameters
-dt = 0.01; % ms
-T = 1000; % ms
-
-excRise = 0.3; % ms
-excRev = 0e-3; % mv
-inhRise = 2.5; % ms
-inhRev = -70e-3; % mv
-
-holdVoltage = -35e-3; % volts
-
-
 %% Grid Parameters
 excFall = [1 3 5 10 15]; % ms
 excAmp = 1e-9*[0.1 0.5 1 3 5 10]; % siemens
@@ -54,7 +41,7 @@ for nef = 1:NEF
                     for nih = 1:NIH
                         for nna = 1:NNA
                             % Time Parameters
-                            timeprm.dt = 0.05; %ms
+                            timeprm.dt = 0.01; %ms
                             timeprm.T = 10000; % ms
 
                             % Synaptic Parameters
@@ -85,7 +72,7 @@ for nef = 1:NEF
                             out = simulateBarrage(timeprm,synprm,stimprm,recprm,anprm);
                             
                             name = sprintf('Barrage_md%d_mp%d_nc%d_ef%d_ea%d_eh%d_if%d_ia%d_ih%d_na%d.mat',...
-                                modulationDepthIDX,modulationPeriodIDX,numCyclesIDX,...
+                                modDepthIDX,modPeriodIDX,numCyclesIDX,...
                                 nef,nea,neh,nif,nia,nih,nna);
                             savepath = fullfile('~/synapticBarrage_190527',name);
                             save(savepath,'out');
