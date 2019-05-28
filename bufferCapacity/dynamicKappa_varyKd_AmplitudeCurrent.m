@@ -4,19 +4,20 @@
 
 %% CRAZY FUCKING GRID
 
-dt = 5e-8; % seconds
-ds = 1000; % downsample factor
+dt = 5e-7; % seconds
+ds = 500; % downsample factor
 T = 0.3;
 tvec = 0:dt*ds:T;
 NT = length(tvec);
 
 % Grid parameters
 kon = 5*10^8; % Kon just use 1
-kd = 5e-6; %[400e-9 800e-9 5e-6 40e-6 100e-6]; % Kds
-beta = 20*1000/12; % (Assuming an endogenous binding ratio of 20...)
+kd = [400e-9 800e-9 5e-6 40e-6 100e-6]; % Kds
+gamma = 21/0.012; % rate of extrusions
+ks = 20;
 rest = 75e-9; % Molar Calcium resting
 kdString = {'400nM' '800nM' '5然' '40然' '100然'};
-amplitude = 5e-12; %[0.5e-12 2e-12 5e-12 20e-12 50e-12];
+amplitude = [0.5e-12 2e-12 5e-12 20e-12 50e-12];
 
 NK = length(kd); 
 NA = length(amplitude);
@@ -25,15 +26,16 @@ NA = length(amplitude);
 p.v = (4/3) * pi * 0.4^3 * 1e-15; % volume expressed as L 
 p.kon = kon; % On-Rate 1/M-s
 p.koff = [];
-p.bconc = 300e-6; 
-p.beta = beta;
+p.ks = ks;
+p.bconc = 300e-6;% 300e-6; 
+p.gamma = gamma;
 p.rest = rest;
 p.amplitude = amplitude(1); 
 
 kappa = @(p,ca) p.bconc / (ca + p.koff/p.kon); % Inline for equilibrium binding ratio
 
 % 10pA current for 2ms -- assume instantaneous 20 Kb endogenous buffer!!!
-ica = @(t,amp) (1/20) * amp * exp(-(t-2e-3).^2./(0.55e-3).^2) .* (t >= 1e-3) .* (t <= 3e-3); 
+ica = @(t,amp,ks) (1/ks) * amp * exp(-(t-2e-3).^2./(0.55e-3).^2) .* (t >= 1e-3) .* (t <= 3e-3); 
 
 makeGrid = true;
 if makeGrid
@@ -181,7 +183,7 @@ set(gca,'fontsize',16);
 xLimConcentrations = [0 30];
 xLimKappas = [0 30];
 
-kdIDX = kd==5e-6; % Grab all amplitudes from 5然 Kd
+kdIDX = kd==100e-6; % Grab all amplitudes from 5然 Kd
 ca = cell2mat(cellfun(@(c) c(:,1), y(kdIDX,:), 'uni', 0));  % Calcium 
 bf = cell2mat(cellfun(@(c) c(:,2), y(kdIDX,:), 'uni', 0));  % Buffer
 dk = cell2mat(dynamicKappa(kdIDX,:)); % Dynamic kappa
