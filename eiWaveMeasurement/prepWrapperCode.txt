@@ -2,9 +2,9 @@
 #SBATCH -c 1                                 # Request five cores
 #SBATCH -N 1                                 # Request one node (if you request more t$
                                              # -N 1 means all cores will be on the sam$
-#SBATCH -t 0-00:02                           # Runtime in D-HH:MM format
+#SBATCH -t 0-05:00                           # Runtime in D-HH:MM format
 #SBATCH -p short                             # Partition to run in
-#SBATCH --mem=1.2G                             # Memory total in MB (for all cores)
+#SBATCH --mem=2G                             # Memory total in MB (for all cores)
 #SBATCH -o atl7_%j.out                       # File to which STDOUT will be written, i$
 #SBATCH -e atl7_%j.err                       # File to which STDERR will be written, i$
 #SBATCH --mail-type=ALL                      # Type of email notification- BEGIN,END,F$
@@ -18,11 +18,11 @@ matlab -nodesktop -r "gridSearch_barrage($1,$2,$3)"
 #!/bin/bash
 #length(modulationDepth)=9
 #length(modulationPeriod)=7
-#length(numCycles)=10
+#length(numCycles)=6
 
 NMD=9
 NMP=7
-NNC=10
+NNC=6
 for nmd in $(seq 1 $NMD)
 do
   for nmp in $(seq 1 $NMP)

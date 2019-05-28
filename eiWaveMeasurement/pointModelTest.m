@@ -10,12 +10,14 @@ tvec = 0:dt:T; %vector (ms)
 alpha = @(t, rise, fall) (t>=0).*(exp(-t/fall) - exp(-t/rise)); % only positive t's...
 
 excRise = 0.3; % ms
-excFall = 5; % ms
+excFall = 3; % ms
 excAmp = 2e-9; % S
 excRev = 0e-3; % V
 excDelay = 0; % ms
+excANRatio = 1; % AMPA/NMDA ratio
+excNMDA = @(v) 1./(1+0.01*exp(-160*v)); % nonlinearity
 
-inhRise = 2.5; % ms
+inhRise = 2; % ms
 inhFall = 10; % ms
 inhAmp = 2e-9; % S
 inhRev = -70e-3; % mV
@@ -32,16 +34,18 @@ restPotential = -70e-3; % Volt
 
 % Stimulation Parameters
 modulationDepth = 10e-3; % mV
-modulationPeriod = 1;
+modulationPeriod = 0.5;
 holdVoltage = -35e-3 + modulationDepth/2*sin(2*pi*tvec/modulationPeriod);
-eCurrent = eConductance .* (holdVoltage - excRev);
+
+eConductanceNL = eConductance + excANRatio*eConductance.*excNMDA(holdVoltage);
+eCurrent = eConductanceNL .* (holdVoltage - excRev);
 iCurrent = iConductance .* (holdVoltage - inhRev);
 synCurrent = eCurrent + iCurrent;
 nCurrent = sqrt(10)*1e-12*randn(1,length(tvec));
 totalCurrent = synCurrent + nCurrent;
 
 % Analysis Cycles
-aCycles = 4;
+aCycles = 1;
 aWindowTime = aCycles * modulationPeriod;
 aWindowSamples = aWindowTime/dt;
 aWindowStart = 1:aWindowSamples:length(tvec);
@@ -86,7 +90,7 @@ ylabel('pA');
 subplot(4,1,3);
 hold on;
 % True Conductances
-plot(tvec, 1e9*eConductance, 'k','linewidth',1.5);
+plot(tvec, 1e9*eConductanceNL, 'k','linewidth',1.5);
 plot(tvec, 1e9*iConductance, 'r','linewidth',1.5);
 % Estimated Conductances
 plot(aWindowCenter,1e9*estConductance(1,:),'color','k','linestyle','none','marker','o','markerfacecolor','k');

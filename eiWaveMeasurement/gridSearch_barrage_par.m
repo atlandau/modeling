@@ -1,11 +1,11 @@
-function gridSearch_barrage(modDepthIDX,modPeriodIDX,numCyclesIDX)
+function gridSearch_barrage_par(modDepthIDX,modPeriodIDX,numCyclesIDX)
 
 
 % do outer loop on modulationDepth and modulationPeriod
 % everything else goes into inner loop
 
 %% Grid Parameters
-excFall = [2 5 15]; % ms
+excFall = [1 5 15]; % ms
 excAmp = 1e-9*[0.3 1 7]; % siemens
 excFreq = [30 100 170]; % 1/sec
 
@@ -45,13 +45,13 @@ for nef = 1:NEF
                             timeprm.T = 10000; % ms
 
                             % Synaptic Parameters
-                            synprm.excRise = 1; % ms
+                            synprm.excRise = 0.3; % ms
                             synprm.excFall = excFall(nef); 
                             synprm.excAmp = excAmp(nea);
                             synprm.excRev = 0e-3; %volts
                             synprm.excFreq = excFreq(neh);
 
-                            synprm.inhRise = 2; % ms
+                            synprm.inhRise = 2.5; % ms
                             synprm.inhFall = inhFall(nif);
                             synprm.inhAmp = inhAmp(nia);
                             synprm.inhRev = -70e-3; % volts

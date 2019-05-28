@@ -3,21 +3,23 @@
 
 % Time
 dt = 0.01; % ms
-T = 200; % ms
+T = 100; % ms
 tvec = 0:dt:T; %vector (ms)
 NT = length(tvec);
 
 % Synaptic Parameters - alpha conductance
 alpha = @(t, rise, fall) double(t>=0).*(exp(-t/fall) - exp(-t/rise)); % only positive t's...
 
-excRise = 0.3; % ms
-excFall = 5; % ms
+excRise = 2; % ms
+excFall = 10; % ms
 excAmp = 3e-9; % S
 excRev = 0e-3; % V
 excFreq = 100; % 1/sec
 excNumber = excFreq * T/1000; % number of inputs
+excANRatio = 0; % AMPA/NMDA ratio
+excNMDA = @(v) 1./(1+0.1*exp(-80*v)); % nonlinearity
 
-inhRise = 2.5; % ms
+inhRise = 2; % ms
 inhFall = 10; % ms
 inhAmp = 3e-9; % S
 inhRev = -70e-3; % mV
@@ -48,17 +50,18 @@ inputResistance = 300e6; % Ohms
 restPotential = -70e-3; % Volt
 
 % Stimulation Parameters
-modulationDepth = 60e-3; % mV
-modulationPeriod = 10; % ms
+modulationDepth = 10e-3; % mV
+modulationPeriod = 2; % ms
 holdVoltage = -35e-3 + modulationDepth/2*sin(2*pi*tvec/modulationPeriod); % Hold Voltage Command
-eCurrent = eConductance .* (holdVoltage - excRev); % Excitatory Current
+eConductanceNL = eConductance + excANRatio*eConductance.*excNMDA(holdVoltage);
+eCurrent = eConductanceNL .* (holdVoltage - excRev); % Excitatory Current
 iCurrent = iConductance .* (holdVoltage - inhRev); % Inhibitory Current
 synCurrent = eCurrent + iCurrent; % Total Synaptic Current
 nCurrent = sqrt(15)*1e-12*randn(1,length(tvec)); % Noise current
 totalCurrent = synCurrent + nCurrent; % Total Measured Current
 
 % Analysis Cycles
-aCycles = 0.05; % How many cycles of the modulation period to average over?
+aCycles = 0.5; % How many cycles of the modulation period to average over?
 aWindowTime = aCycles * modulationPeriod; % Time of analysis window
 aWindowSamples = aWindowTime/dt; % Samples of analysis window
 aWindowStart = 1:aWindowSamples:NT; % Start of each window in samples
@@ -86,9 +89,9 @@ for naw = 1:NAW-1
     estConductance(2,naw) = cgi;
     
     % Compute Residual
-    cExcAverage = mean(eConductance(cSamples));
+    cExcAverage = mean(eConductanceNL(cSamples));
     cInhAverage = mean(iConductance(cSamples));
-    cycleConductance(:,naw) = [mean(eConductance(cSamples)); mean(iConductance(cSamples))];
+    cycleConductance(:,naw) = [mean(eConductanceNL(cSamples)); mean(iConductance(cSamples))];
     residual(:,naw) = estConductance(:,naw) - cycleConductance(:,naw);
 end
 
@@ -126,7 +129,7 @@ set(gca,'fontsize',16);
 subplot(2,2,2);
 hold on;
 % True Conductances
-plot(tvec, 1e9*eConductance, 'k','linewidth',1.5);
+plot(tvec, 1e9*eConductanceNL, 'k','linewidth',1.5);
 plot(tvec, 1e9*iConductance, 'r','linewidth',1.5);
 % Estimated Conductances
 plot(aWindowCenter,1e9*estConductance(1,:),...
@@ -140,13 +143,11 @@ title('Synaptic Conductance w/ Estimates');
 set(gca,'fontsize',16);
 
 subplot(2,2,4);
-hold on;
-bar([rmsError' excr2 inhr2],'FaceColor','k');
-set(gca,'xtick',1:4);
-set(gca,'xticklabel',{'RMS(Res)-Exc','RMS(Res)-Inh','Exc R^{2}','Inh R^{2}'});
-set(gca,'xticklabelrotation',45);
-ylabel('nS      or      R^{2}');
-title('Summary Stats');
+voltages = 1e-3*(-80:40);
+plot(1e3*voltages,excNMDA(voltages),'k','linewidth',1.5);
+xlabel('Voltage (mV)');
+ylabel('NMDAR Conductance');
+title('Nonlinearity');
 set(gca,'fontsize',16);
 
 
