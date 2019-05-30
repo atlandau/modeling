@@ -1,4 +1,4 @@
-function out = pmStimulation(tprm,exc,inh,stim)
+function out = vcStimulation(tprm,exc,inh,stim)
 
 % Log Normal Inline
 lnprm = @(mn,vr) [log((mn^2)/sqrt(vr+mn^2)), sqrt(log(vr/(mn^2)+1))];

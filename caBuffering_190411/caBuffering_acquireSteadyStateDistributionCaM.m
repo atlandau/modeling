@@ -25,7 +25,7 @@ state = zeros(NIC,9);
 for ic = 1:NIC
     fprintf(1,'Calcium concentration %d/%d\n',ic,NIC);
     initState(1) = iCalcium(ic);
-    [t,y,d] = euclidapp(@(t,y) calmodulinModel_HoldCalcium(t,y,p),[0 T(ic)],initState,dt(ic),ds(ic));
+    [t,y,d] = eulerapp(@(t,y) calmodulinModel_HoldCalcium(t,y,p),[0 T(ic)],initState,dt(ic),ds(ic));
     state(ic,:) = y(end,2:end);
 end
 
@@ -92,7 +92,7 @@ for ic = 1:NIC
     for cs = 1:NCS
         fprintf('| IC: %d/%d | CS: %d/%d...\n',ic,NIC,cs,NCS);
         initState = [caStep(cs); ss.state(ic,:)'];
-        [t,y,d] = euclidapp(@(t,y) calmodulinModel_HoldCalcium(t,y,p),[0 T],initState,dt,ds);
+        [t,y,d] = eulerapp(@(t,y) calmodulinModel_HoldCalcium(t,y,p),[0 T],initState,dt,ds);
         response{ic,cs} = y;
     end
 end

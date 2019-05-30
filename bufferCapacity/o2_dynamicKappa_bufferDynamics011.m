@@ -28,7 +28,7 @@ ica = @(t,amp) (1/ks) * amp * exp(-(t-2e-3).^2./(0.55e-3).^2) .* (t >= 1e-3) .* 
 currentKappa = kappa(p,p.rest);
 iState = [p.rest p.rest*currentKappa];
 
-y = euclidapp(@(t,y) bufferDynamics_011(t,y,ica,p),[0 T],iState,dt,ds); % numerical approximation of calcium and buffer
+y = eulerapp(@(t,y) bufferDynamics_011(t,y,ica,p),[0 T],iState,dt,ds); % numerical approximation of calcium and buffer
 
 % Make grid parameter structure so we know what the values were
 gridParameters.kon = kon;

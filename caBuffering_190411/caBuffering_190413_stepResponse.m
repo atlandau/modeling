@@ -130,7 +130,7 @@ plot(cy(:,2));
 
 %%
 
-[tt,yy,dd] = euclidapp(@(t,y) bufferDynamics_011(t,y,icaStep,p),[0 T],initState,dt/10);
+[tt,yy,dd] = eulerapp(@(t,y) bufferDynamics_011(t,y,icaStep,p),[0 T],initState,dt/10);
 
 toPlot = yy;
 
@@ -160,7 +160,7 @@ initState = [50e-9; 150e-6; zeros(8,1)];
 
 dt = 1e-6;
 T = 5;
-[t,y,d] = euclidapp(@(t,y) calmodulinModel_HoldCalcium(t,y,p),[0 T],initState,dt);
+[t,y,d] = eulerapp(@(t,y) calmodulinModel_HoldCalcium(t,y,p),[0 T],initState,dt);
 
 
 f = figure;
@@ -206,7 +206,7 @@ initState = [iCalcium(12); 150e-6; zeros(8,1)];
 dt = 1e-8;
 ds = 100000;
 T = 0.01;
-[t,y,d] = euclidapp(@(t,y) calmodulinModel_HoldCalcium(t,y,p),[0 T],initState,dt,ds);
+[t,y,d] = eulerapp(@(t,y) calmodulinModel_HoldCalcium(t,y,p),[0 T],initState,dt,ds);
 
 
 f = figure;

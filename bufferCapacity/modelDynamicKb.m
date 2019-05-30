@@ -53,7 +53,7 @@ if makeGrid
                     p.rest = rest(nr);
                     kappas(non,nof,nb,nr) = kappa(p,p.rest);
                     iState = [p.rest p.rest*kappa(p,p.rest)];
-                    [~,y{non,nof,nb,nr}] = euclidapp(@(t,y) bufferDynamics_011(t,y,ica,p),[0 T],iState,dt,ds);
+                    [~,y{non,nof,nb,nr}] = eulerapp(@(t,y) bufferDynamics_011(t,y,ica,p),[0 T],iState,dt,ds);
                     dynamicKappa{non,nof,nb,nr} = y{non,nof,nb,nr}(:,2) ./ y{non,nof,nb,nr}(:,1); % dynamic kappa
                 end
             end
