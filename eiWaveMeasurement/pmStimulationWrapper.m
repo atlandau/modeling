@@ -21,11 +21,9 @@ exc.excAmp = 3e-9; % S
 exc.excRev = 0e-3; % V
 exc.excNumberMean = 30;  % Mean Value
 exc.excNumberVar = 15; % Variance
-exc.enPrms = lnprm(excNumberMean,excNumberVar); % Excitatory Number - LN Parameters
 exc.excHardDelay = 5;
 exc.excDelayMean = 2;
 exc.excDelayVar = 3; 
-exc.edPrms = lnprm(excDelayMean,excDelayVar); % Excitatory Delay - LN Parameters
 
 inh.inhRise = 2.5; % ms
 inh.inhFall = 10; % ms
@@ -33,12 +31,10 @@ inh.inhAmp = 3e-9; % S
 inh.inhRev = -70e-3; % V
 inh.inhDelay = 7; % ms
 inh.inhNumberMean = 30; 
-inh.inhNumberVar = 15; 
-inh.inPrms = lnprm(inhNumberMean,inhNumberVar); % Inhibitory Number - LN Parameters
+inh.inhNumberVar = 15;
 inh.inhHardDelay = 7;
 inh.inhDelayMean = 2;
 inh.inhDelayVar = 3;
-inh.idPrms = lnprm(excDelayMean,excDelayVar); % Inhibitory Delay - LN Parameters
 
 % Stimulation / Analysis Parameters
 stim.vHold = -35e-3; % V
@@ -50,7 +46,7 @@ stim.aCycles = 0.5;
 stim.method = 'simple'; % or "interleaved" or a numeric value to downsample interleaved
 
 % Run Simulations
-NR = 50;
+NR = 2;
 results = cell(NR,1);
 for nr = 1:NR
     if rem(nr*10,NR)==0
@@ -77,45 +73,45 @@ excDifference = permute(1e9*estConductance(1,:,:) - 1e9*cycConductance(1,:,:),[2
 inhDifference = permute(1e9*estConductance(2,:,:) - 1e9*cycConductance(2,:,:),[2 3 1]);
 excr2 = cellfun(@(c) c.excr2, results, 'uni', 1);
 inhr2 = cellfun(@(c) c.inhr2, results, 'uni', 1);
-
-
-f=figure(1);
-clf;
-set(gcf,'units','normalized','outerposition',[0.1 0.1 0.4 0.7]);
-
-subplot(3,1,1);
-plot(base.tvec, 1e3*mean(holdVoltage,1),'k');
-xlim([0 50]);
-ylim([-45 -25]);
-ylabel('mV');
-title('hold voltage');
-set(gca,'fontsize',16);
-
-subplot(3,1,2);
-hold on;
-plot(base.tvec,mean(1e9*eConductance,1),'k');
-plot(base.tvec,mean(1e9*iConductance,1),'r');
-shadedErrorBar(base.tvec,mean(1e9*eConductance,1),std(1e9*eConductance,[],1),'k',0.5);
-shadedErrorBar(base.tvec,mean(1e9*iConductance,1),std(1e9*iConductance,[],1),'r',0.5);
-xlim([0 50]);
-ylabel('nS');
-legend('excitatory','inhibitory','location','northeast');
-title('conductance distribution');
-set(gca,'fontsize',16);
-
-subplot(3,1,3);
-hold on;
-shadedErrorBar(base.tvec,mean(1e12*totalCurrent,1),std(1e12*totalCurrent,[],1),{'color','k','linewidth',1.5});
-xlim([0 50]);
-ylabel('pA');
-title('Total Current Distribution');
-set(gca,'fontsize',16);
+% 
+% 
+% f=figure(1);
+% clf;
+% set(gcf,'units','normalized','outerposition',[0.1 0.1 0.4 0.7]);
+% 
+% subplot(3,1,1);
+% plot(base.tvec, 1e3*mean(holdVoltage,1),'k');
+% xlim([0 50]);
+% ylim([-45 -25]);
+% ylabel('mV');
+% title('hold voltage');
+% set(gca,'fontsize',16);
+% 
+% subplot(3,1,2);
+% hold on;
+% plot(base.tvec,mean(1e9*eConductance,1),'k');
+% plot(base.tvec,mean(1e9*iConductance,1),'r');
+% shadedErrorBar(base.tvec,mean(1e9*eConductance,1),std(1e9*eConductance,[],1),'k',0.5);
+% shadedErrorBar(base.tvec,mean(1e9*iConductance,1),std(1e9*iConductance,[],1),'r',0.5);
+% xlim([0 50]);
+% ylabel('nS');
+% legend('excitatory','inhibitory','location','northeast');
+% title('conductance distribution');
+% set(gca,'fontsize',16);
+% 
+% subplot(3,1,3);
+% hold on;
+% shadedErrorBar(base.tvec,mean(1e12*totalCurrent,1),std(1e12*totalCurrent,[],1),{'color','k','linewidth',1.5});
+% xlim([0 50]);
+% ylabel('pA');
+% title('Total Current Distribution');
+% set(gca,'fontsize',16);
 
 %print(f,'-painters',fullfile(spath,'simulationPlots'),'-djpeg');
 
-g = figure(2);
+g = callFigs(2);
 clf;
-set(gcf,'units','normalized','outerposition',[0.55 0.1 0.4 0.7]);
+% set(gcf,'units','normalized','outerposition',[0.55 0.1 0.4 0.7]);
 
 subplot(3,2,1);
 hold on;
@@ -172,7 +168,7 @@ ylabel('counts');
 title('Inhibitory Estimation Accuracy');
 set(gca,'fontsize',16);
 
-print(g,'-painters',fullfile(spath,'errorAnalysis-50x-PhaseShift'),'-djpeg');
+% print(g,'-painters',fullfile(spath,'errorAnalysis-50x-PhaseShift'),'-djpeg');
 
 
 

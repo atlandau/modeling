@@ -1,6 +1,5 @@
 function out = pmStimulation(tprm,exc,inh,stim)
 
-
 % Log Normal Inline
 lnprm = @(mn,vr) [log((mn^2)/sqrt(vr+mn^2)), sqrt(log(vr/(mn^2)+1))];
 alpha = @(t, rise, fall) double(t>=0).*(exp(-t/fall) - exp(-t/rise)); % only positive t's...
@@ -39,7 +38,13 @@ out.eConductance = sum(excConds,1);
 out.iConductance = sum(inhConds,1);
 
 % Stimulation
-sineMod = sin(2*pi*out.tvec/stim.modulationPeriod + 2*pi*rand*stim.modulationShift); 
+persistent phaseSwitch
+if isempty(phaseSwitch)
+    phaseSwitch = true;
+end
+phaseSwitch = ~phaseSwitch;
+
+sineMod = sin(2*pi*out.tvec/stim.modulationPeriod + phaseSwitch*pi*stim.modulationShift); 
 out.holdVoltage = stim.vHold + stim.modulationDepth/2 * sineMod; % Hold Voltage Command
 out.eCurrent = out.eConductance .* (out.holdVoltage - exc.excRev); % Excitatory Current
 out.iCurrent = out.iConductance .* (out.holdVoltage - inh.inhRev); % Inhibitory Current
