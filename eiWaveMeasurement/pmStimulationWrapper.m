@@ -32,13 +32,13 @@ inh.inhRev = -70e-3; % V
 inh.inhDelay = 7; % ms
 inh.inhNumberMean = 30; 
 inh.inhNumberVar = 15;
-inh.inhHardDelay = 7;
+inh.inhHardDelay = 5;
 inh.inhDelayMean = 2;
 inh.inhDelayVar = 3;
 
 % Stimulation / Analysis Parameters
 stim.vHold = -35e-3; % V
-stim.modulationShift = 1; % 1/0 - do you randomize the phase?
+stim.modulationShift = 1; % 1/0 - do you flip the phase?
 stim.modulationDepth = 10e-3; %V
 stim.modulationPeriod = 2; % ms
 stim.noiseAmplitude = 15e-12; % A
@@ -46,7 +46,7 @@ stim.aCycles = 0.5;
 stim.method = 'simple'; % or "interleaved" or a numeric value to downsample interleaved
 
 % Run Simulations
-NR = 2;
+NR = 16;
 results = cell(NR,1);
 for nr = 1:NR
     if rem(nr*10,NR)==0
@@ -149,7 +149,7 @@ legend('Excitatory Error','Inhibitory Error');
 set(gca,'fontsize',16);
 
 subplot(3,2,5);
-he = histogram(excr2,0:0.05:1);
+he = histogram(excr2,0:0.025:1);
 he.FaceColor = 'k';
 he.EdgeColor = 'k';
 xlim([0 1]);
@@ -159,7 +159,7 @@ title('Excitatory Estimation Accuracy');
 set(gca,'fontsize',16);
 
 subplot(3,2,6);
-hi = histogram(inhr2,0:0.05:1);
+hi = histogram(inhr2,0:0.025:1);
 hi.FaceColor = 'r';
 hi.EdgeColor = 'r';
 xlim([0 1]);

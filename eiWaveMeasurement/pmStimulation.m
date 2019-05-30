@@ -4,6 +4,15 @@ function out = pmStimulation(tprm,exc,inh,stim)
 lnprm = @(mn,vr) [log((mn^2)/sqrt(vr+mn^2)), sqrt(log(vr/(mn^2)+1))];
 alpha = @(t, rise, fall) double(t>=0).*(exp(-t/fall) - exp(-t/rise)); % only positive t's...
 
+% This flips the polarity of the sine wave modulation each run.
+% It's gated by stim.modulationShift.
+persistent phaseSwitch
+if isempty(phaseSwitch)
+    phaseSwitch = true;
+end
+phaseSwitch = ~phaseSwitch;
+
+
 % Time Parameters
 out.tvec = 0:tprm.dt:tprm.T; %vector (ms)
 NT = length(out.tvec);
@@ -38,11 +47,6 @@ out.eConductance = sum(excConds,1);
 out.iConductance = sum(inhConds,1);
 
 % Stimulation
-persistent phaseSwitch
-if isempty(phaseSwitch)
-    phaseSwitch = true;
-end
-phaseSwitch = ~phaseSwitch;
 
 sineMod = sin(2*pi*out.tvec/stim.modulationPeriod + phaseSwitch*pi*stim.modulationShift); 
 out.holdVoltage = stim.vHold + stim.modulationDepth/2 * sineMod; % Hold Voltage Command
