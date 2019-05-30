@@ -3,7 +3,8 @@
 % System Parameters
 p.rs = 10e6; % access resistance (Ohms) 
 p.rm = 300e6; % input resistance (Ohms)
-p.cm = 150e-12; % cell capacitance (F)
+p.cm = 30e-12; % cell capacitance (F)
+p.em = -70e-3; % rest potential
 
 % Set up voltage clamp hold potential
 vcType = 'sine'; % options: {'sine','step'}
@@ -11,10 +12,11 @@ switch vcType
     case 'sine'
         vcModDepth = 10e-3; % volts
         vcModPeriod = 2e-3; % ms
-        p.vc = @(t) vcModDepth * sin(2*pi*t/vcModPeriod);
+        vcModCenter = -35e-3; % center voltage
+        p.vc = @(t) vcModCenter + vcModDepth/2 * sin(2*pi*t/vcModPeriod);
     case 'step'
         vcStepTime = 5e-3; % s
-        vcHold = 100e-3; % Volts
+        vcHold = -70e-3; % Volts
         p.vc = @(t) vcHold * (t>=vcStepTime); % heaviside
 end
 
@@ -23,7 +25,7 @@ dt = 0.01e-3; % s
 ds = 1;
 T = 20e-3; % s
 tspan = [0 T];
-iState = 0; % start at 0mV (this model assumes 0mV as rest potential) 
+iState = p.vc(0); % start at 0mV (this model assumes 0mV as rest potential) 
 
 [t,vm] = eulerapp(@(t,vm) vcdiffeq(t,vm,p),tspan,iState,dt,ds); % do euler approximation 
 
@@ -61,8 +63,8 @@ set(gca,'fontsize',16);
 
 subplot(3,1,3);
 hold on;
-plot(1e3*t,Ivc/max(Ivc),'color','k','linewidth',1.5);
-plot(1e3*t,vm/max(vm),'color','r','linewidth',1.5);
+plot(1e3*t,norman(Ivc),'color','k','linewidth',1.5);
+plot(1e3*t,norman(vm),'color','r','linewidth',1.5);
 xlabel('Time (ms)');
 ylabel('Normalized');
 title('Phase Delay I_{vc}, V_m');
@@ -86,7 +88,9 @@ set(gca,'fontsize',16);
 %            |
 %    ----------------- - ---------------- Vm
 %    |               |
-%    Rm              Cm
+%    Rm              |
+%    |               Cm
+%    Em              |
 %    |               |
 %    ----------------- - ---------------- Ground
 %            |
@@ -98,11 +102,11 @@ set(gca,'fontsize',16);
 % Irs = Irm + Icm         |    KCL
 %
 % Irs = (Vc - Vm) / Rs    |    Ivc = Irs
-% Irm = Vm/Rm
+% Irm = (Vm-Em)/Rm
 % Icm = Cm * dVm/dt
 % 
 % 
-% dVm/dt = (Vc/Rs) - Vm/Rs - Vm/Rm
+% dVm/dt = (Vc/Rs - Vm/Rs - Vm/Rm + Em/Rm)/Cm
 %
 %}
 function dv = vcdiffeq(t,vm,p)
@@ -116,8 +120,9 @@ function dv = vcdiffeq(t,vm,p)
     %   - p.rs = access
     %   - p.rm = input resistance
     %   - p.cm = capacitance
+    %   - p.em = rest potential
     %   - p.vc = inline for time-dependent change
-    dv = (p.vc(t)/p.rs - vm/p.rs - vm/p.rm)/p.cm;
+    dv = (p.vc(t)/p.rs - vm/p.rs - vm/p.rm + p.em/p.rm)/p.cm;
 end
 
 

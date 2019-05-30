@@ -1,4 +1,6 @@
-function out = vcStimulation(tprm,exc,inh,stim)
+function out = vcStimulation(tprm,exc,inh,stim,cellprm)
+% adds a line to convert holdVoltage to cell voltage that is phase shifted
+% and damped by the cell's membrane
 
 % Log Normal Inline
 lnprm = @(mn,vr) [log((mn^2)/sqrt(vr+mn^2)), sqrt(log(vr/(mn^2)+1))];
@@ -11,7 +13,6 @@ if isempty(phaseSwitch)
     phaseSwitch = true;
 end
 phaseSwitch = ~phaseSwitch;
-
 
 % Time Parameters
 out.tvec = 0:tprm.dt:tprm.T; %vector (ms)
@@ -48,10 +49,20 @@ out.eConductance = sum(excConds,1); % Sum up all conductances from each synapse
 out.iConductance = sum(inhConds,1);
 
 % Stimulation
-sineMod = sin(2*pi*out.tvec/stim.modulationPeriod + phaseSwitch*pi*stim.modulationShift); % Create sine wave mod
-out.holdVoltage = stim.vHold + stim.modulationDepth/2*sineMod; % Hold Voltage Command
-out.eCurrent = out.eConductance .* (out.holdVoltage - exc.excRev); % Excitatory Current
-out.iCurrent = out.iConductance .* (out.holdVoltage - inh.inhRev); % Inhibitory Current
+cellprm.vc = @(t) stim.vHold + ... % adjust to hold voltage
+    stim.modulationDepth/2 * ... % set height 
+    sin(2*pi*t/stim.modulationPeriod + phaseSwitch*pi*stim.modulationShift); % create sine wave
+cellprm.em = cellprm.vc(0);
+iState = cellprm.em;
+out.holdVoltage = cellprm.vc(out.tvec);
+[tvecCheck,out.cellVoltage] = eulerapp(@(t,v) vcdiffeq(t,v,cellprm),[0 tprm.T],iState,tprm.dt,1,0); % Generate true cell voltage
+if ~isequal(tvecCheck,out.tvec)
+    error('Time vector generated incorrectly in eulerapp...');
+end
+out.cellVoltage = out.cellVoltage(:)';
+
+out.eCurrent = out.eConductance .* (out.cellVoltage - exc.excRev); % Excitatory Current
+out.iCurrent = out.iConductance .* (out.cellVoltage - inh.inhRev); % Inhibitory Current
 synCurrent = out.eCurrent + out.iCurrent; % Total Synaptic Current
 nCurrent = stim.noiseAmplitude*randn(1,length(out.tvec)); % Noise current
 out.totalCurrent = synCurrent + nCurrent; % Total Measured Current
