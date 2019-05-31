@@ -25,7 +25,6 @@ edPrms = lnprm(exc.excDelayMean,exc.excDelayVar); % Excitatory Delay - LN Parame
 inPrms = lnprm(inh.inhNumberMean,inh.inhNumberVar); % Inhibitory Number - LN Parameters
 idPrms = lnprm(inh.inhDelayMean,inh.inhDelayVar); % Inhibitory Delay - LN Parameters
 
-
 % Generate Conductances
 eNumber = round(lognrnd(enPrms(1),enPrms(2)));
 iNumber = round(lognrnd(inPrms(1),inPrms(2)));
@@ -48,14 +47,30 @@ end
 out.eConductance = sum(excConds,1); % Sum up all conductances from each synapse
 out.iConductance = sum(inhConds,1);
 
+% Create synaptic parameters for simulation
+syn.ee = exc.excRev;
+syn.ei = inh.inhRev;
+syn.tvec = out.tvec;
+syn.ge = out.eConductance;
+syn.gi = out.iConductance;
+
 % Stimulation
-cellprm.vc = @(t) stim.vHold + ... % adjust to hold voltage
-    stim.modulationDepth/2 * ... % set height 
-    sin(2*pi*t/stim.modulationPeriod + phaseSwitch*pi*stim.modulationShift); % create sine wave
-cellprm.em = cellprm.vc(0);
-iState = cellprm.em;
+varyPhase = pi*stim.modulationShift*phaseSwitch + rand*2*pi*(stim.modulationShift==-1);
+cellprm.vc = @(t) stim.vHold + stim.modulationDepth/2 * sin(2*pi*t/stim.modulationPeriod + varyPhase); % Sine wave mod
+iState = cellprm.vc(0);
 out.holdVoltage = cellprm.vc(out.tvec);
-[tvecCheck,out.cellVoltage] = eulerapp(@(t,v) vcdiffeq(t,v,cellprm),[0 tprm.T],iState,tprm.dt,1,0); % Generate true cell voltage
+[tvecCheck,out.cellVoltage] = ...
+    eulerapp(@(t,v) vcSynapticDiffEQ(t,v,cellprm,syn),[0 tprm.T],iState,tprm.dt,1,0); % Generate true cell voltage
+ 
+% figure(1); clf; 
+% subplot(2,1,1); hold on;
+% plot(1e3*out.tvec,1e3*out.holdVoltage,'k','linewidth',1.5);
+% plot(1e3*out.tvec,1e3*out.cellVoltage,'r','linewidth',1.5);
+% subplot(2,1,2); hold on;
+% plot(1e3*out.tvec,1e9*out.eConductance,'k','linewidth',1.5);
+% plot(1e3*out.tvec,1e9*out.iConductance,'r','linewidth',1.5);
+% return
+
 if ~isequal(tvecCheck,out.tvec)
     error('Time vector generated incorrectly in eulerapp...');
 end

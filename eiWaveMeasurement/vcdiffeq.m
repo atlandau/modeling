@@ -1,8 +1,6 @@
 function dv = vcdiffeq(t,vm,p)
 % dv = vcdiffeq(t,vm,p)
 %
-% super stupid model- assumes Erest is 0V
-%
 % t is time in ms
 % vm is the membrane potential in volts
 % p is the parameter structure
@@ -42,6 +40,8 @@ function dv = vcdiffeq(t,vm,p)
 % 
 % 
 % dVm/dt = (Vc/Rs - Vm/Rs - Vm/Rm + Em/Rm)/Cm
+
+
 
 
 dv = (p.vc(t)/p.rs - vm/p.rs - vm/p.rm + p.em/p.rm)/p.cm;

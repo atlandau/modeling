@@ -10,7 +10,7 @@ p.em = -70e-3; % rest potential
 vcType = 'sine'; % options: {'sine','step'}
 switch vcType
     case 'sine'
-        vcModDepth = 10e-3; % volts
+        vcModDepth = 15e-3; % volts
         vcModPeriod = 2e-3; % ms
         vcModCenter = -35e-3; % center voltage
         p.vc = @(t) vcModCenter + vcModDepth/2 * sin(2*pi*t/vcModPeriod);
@@ -41,7 +41,7 @@ clf;
 set(gcf,'units','normalized','outerposition',[0.3 0.1 0.4 0.7]);
 
 subplot(3,1,1);
-hold on;
+hold on;  
 plot(1e3*t,1e3*p.vc(t),'color','k','linewidth',1.5);
 plot(1e3*t,1e3*vm,'color','r','linewidth',1.5);
 xlabel('Time (ms)');
