@@ -28,9 +28,9 @@ idPrms = lnprm(inh.inhDelayMean,inh.inhDelayVar); % Inhibitory Delay - LN Parame
 % Generate Conductances
 eNumber = round(lognrnd(enPrms(1),enPrms(2)));
 iNumber = round(lognrnd(inPrms(1),inPrms(2)));
-% Generate timing trains, resolve to dt, add hard delay
-eTrain = exc.excHardDelay + round(lognrnd(edPrms(1),edPrms(2),[eNumber 1])/tprm.dt)*tprm.dt;
-iTrain = inh.inhHardDelay + round(lognrnd(idPrms(1),idPrms(2),[iNumber 1])/tprm.dt)*tprm.dt;
+% Generate timing trains, resolve to dt, add hard delay and baselineWindow
+eTrain = tprm.T/2 + exc.excHardDelay + round(lognrnd(edPrms(1),edPrms(2),[eNumber 1])/tprm.dt)*tprm.dt;
+iTrain = tprm.T/2 + inh.inhHardDelay + round(lognrnd(idPrms(1),idPrms(2),[iNumber 1])/tprm.dt)*tprm.dt;
 excConds = zeros(eNumber,NT);
 inhConds = zeros(iNumber,NT);
 for ne = 1:eNumber
@@ -54,6 +54,7 @@ syn.tvec = out.tvec;
 syn.ge = out.eConductance;
 syn.gi = out.iConductance;
 
+
 % Stimulation
 varyPhase = pi*stim.modulationShift*phaseSwitch + rand*2*pi*(stim.modulationShift==-1);
 cellprm.vc = @(t) stim.vHold + stim.modulationDepth/2 * sin(2*pi*t/stim.modulationPeriod + varyPhase); % Sine wave mod
@@ -61,26 +62,42 @@ iState = cellprm.vc(0);
 out.holdVoltage = cellprm.vc(out.tvec);
 [tvecCheck,out.cellVoltage] = ...
     eulerapp(@(t,v) vcSynapticDiffEQ(t,v,cellprm,syn),[0 tprm.T],iState,tprm.dt,1,0); % Generate true cell voltage
- 
-% figure(1); clf; 
-% subplot(2,1,1); hold on;
-% plot(1e3*out.tvec,1e3*out.holdVoltage,'k','linewidth',1.5);
-% plot(1e3*out.tvec,1e3*out.cellVoltage,'r','linewidth',1.5);
-% subplot(2,1,2); hold on;
-% plot(1e3*out.tvec,1e9*out.eConductance,'k','linewidth',1.5);
-% plot(1e3*out.tvec,1e9*out.iConductance,'r','linewidth',1.5);
-% return
 
 if ~isequal(tvecCheck,out.tvec)
     error('Time vector generated incorrectly in eulerapp...');
 end
 out.cellVoltage = out.cellVoltage(:)';
 
-out.eCurrent = out.eConductance .* (out.cellVoltage - exc.excRev); % Excitatory Current
-out.iCurrent = out.iConductance .* (out.cellVoltage - inh.inhRev); % Inhibitory Current
+% Estimate Voltage with circuit analysis
+holdingCenter = (cellprm.em*cellprm.rs + stim.vHold*cellprm.rm) / (cellprm.rs + cellprm.rm);
+omega = 2*pi/stim.modulationPeriod;
+realImpedance = (cellprm.rm + cellprm.rs)/cellprm.rm;
+imagImpedance = omega * cellprm.rs * cellprm.cm;
+magResponse = stim.modulationDepth / sqrt(realImpedance^2 + imagImpedance^2);
+timeDelay = atan(imagImpedance/realImpedance)/(2*pi) * stim.modulationPeriod;
+out.estimateVoltage = holdingCenter + ...  
+    magResponse/2*(2/stim.modulationDepth*(cellprm.vc(out.tvec-timeDelay)-stim.vHold));
+
+
+% Compute Currents
+out.eCurrent = syn.ge .* (out.cellVoltage - exc.excRev); % Excitatory Current
+out.iCurrent = syn.gi .* (out.cellVoltage - inh.inhRev); % Inhibitory Current
+out.rCurrent = (out.cellVoltage - cellprm.em) / cellprm.rm; % resistive current
+out.cCurrent = cellprm.cm * diff(out.cellVoltage)/tprm.dt; % capacitive current
+out.cCurrent(end+1) = out.cCurrent(end); % add in relatively accurate last value
 synCurrent = out.eCurrent + out.iCurrent; % Total Synaptic Current
 nCurrent = stim.noiseAmplitude*randn(1,length(out.tvec)); % Noise current
-out.totalCurrent = synCurrent + nCurrent; % Total Measured Current
+out.totalCurrent = synCurrent + nCurrent + out.rCurrent + out.cCurrent; % Total Measured Current
+
+% Do subtraction
+samplesPerCycle = stim.modulationPeriod/tprm.dt;
+baseCurrentNumberCycles = floor(tprm.T/2 / stim.modulationPeriod);
+baseCurrent = out.totalCurrent(samplesPerCycle+1:baseCurrentNumberCycles*samplesPerCycle);
+out.averageBaseCurrent = mean(reshape(baseCurrent,samplesPerCycle,baseCurrentNumberCycles-1),2)';
+numberFullCycles = floor(NT/samplesPerCycle);
+remainingSamples = NT - numberFullCycles*samplesPerCycle;
+subtractCurrent = [repmat(out.averageBaseCurrent,1,numberFullCycles), out.averageBaseCurrent(1:remainingSamples)];
+out.estimateCurrent = out.totalCurrent - subtractCurrent;
 
 % Analysis Cycles
 aWindowTime = stim.aCycles * stim.modulationPeriod; % Time of analysis window
@@ -114,8 +131,8 @@ for naw = 1:NAW
     cSamples = aWindowStart(naw):aWindowStart(naw)+aWindowSamples-1;
     
     % Results --
-    aResult(:,naw,1) = out.totalCurrent(cSamples);
-    aResult(:,naw,2) = out.holdVoltage(cSamples);
+    aResult(:,naw,1) = out.estimateCurrent(cSamples);
+    aResult(:,naw,2) = out.estimateVoltage(cSamples);
     out.aLine(:,naw) = [aResult(:,naw,2) ones(aWindowSamples,1)] \ aResult(:,naw,1); % Linear Regression
     
     % Convert to Conductances (Wehr & Zador, 2003, Nature)

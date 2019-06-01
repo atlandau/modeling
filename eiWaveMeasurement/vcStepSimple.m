@@ -3,16 +3,16 @@
 % System Parameters
 p.rs = 10e6; % access resistance (Ohms) 
 p.rm = 300e6; % input resistance (Ohms)
-p.cm = 30e-12; % cell capacitance (F)
+p.cm = 200e-12; % cell capacitance (F)
 p.em = -70e-3; % rest potential
 
 % Set up voltage clamp hold potential
 vcType = 'sine'; % options: {'sine','step'}
 switch vcType
     case 'sine'
-        vcModDepth = 15e-3; % volts
-        vcModPeriod = 2e-3; % ms
-        vcModCenter = -35e-3; % center voltage
+        vcModDepth = 10e-3; % volts
+        vcModPeriod = 0.5e-3; % seconds
+        vcModCenter = -70e-3; % center voltage
         p.vc = @(t) vcModCenter + vcModDepth/2 * sin(2*pi*t/vcModPeriod);
     case 'step'
         vcStepTime = 5e-3; % s
@@ -25,7 +25,7 @@ dt = 0.01e-3; % s
 ds = 1;
 T = 20e-3; % s
 tspan = [0 T];
-iState = p.vc(0); % start at 0mV (this model assumes 0mV as rest potential) 
+iState = p.vc(0);%-0.070774287780911; % start at 0mV (this model assumes 0mV as rest potential) 
 
 [t,vm] = eulerapp(@(t,vm) vcdiffeq(t,vm,p),tspan,iState,dt,ds); % do euler approximation 
 
@@ -33,6 +33,27 @@ iState = p.vc(0); % start at 0mV (this model assumes 0mV as rest potential)
 Ivc = (p.vc(0:dt*ds:T)' - vm)/p.rs; % Voltage Clamp (Measured) Current 
 Ir = vm/p.rm; % Membrane Current 
 Ic = p.cm * diff(vm)/dt; % Capacitive Current 
+
+% Compute Estimate from parameters
+if strcmp(vcType,'sine')
+    w = 2*pi/vcModPeriod;
+    estVm = @(t,center,depth,period) center + depth/2 * sin(2*pi*t/period);
+    
+    realDamping = (p.rm + p.rs)/(p.rm);
+    imagDamping = w * p.rs * p.cm;
+    
+    dampFactor = sqrt(realDamping^2 + imagDamping^2);
+    magnitudeResponse = vcModDepth / dampFactor;
+    angleResponse = atan(imagDamping/realDamping); 
+    timeDelay = angleResponse/(2*pi)*vcModPeriod;
+    estimateResponse = estVm(t-timeDelay,vcModCenter,magnitudeResponse,vcModPeriod);
+end
+[r,lags] = xcorr(norman(Ivc),norman(vm));
+bestLag = lags(r==max(r));
+sampleDelay = -bestLag;
+timeDelay = t(abs(sampleDelay));
+angleDelay = -sign(bestLag)*timeDelay/vcModPeriod*360;
+fprintf('angle delay: %d degrees\n',round(angleDelay));
 
 
 % - plot result -
@@ -44,10 +65,17 @@ subplot(3,1,1);
 hold on;  
 plot(1e3*t,1e3*p.vc(t),'color','k','linewidth',1.5);
 plot(1e3*t,1e3*vm,'color','r','linewidth',1.5);
+if strcmp(vcType,'sine')
+    plot(1e3*t,1e3*estimateResponse,'color','c','linewidth',1.5);
+end
 xlabel('Time (ms)');
 ylabel('V_m (mV)');
 title('Voltage');
-legend('V_{hold}','V_{m}','location','northeast');
+if strcmp(vcType,'sine')
+    legend('V_{hold}','V_{m}','V_{est}','location','northeast');
+else
+    legend('V_{hold}','V_{m}','location','northeast');
+end
 set(gca,'fontsize',16);
 
 subplot(3,1,2);
@@ -147,7 +175,7 @@ function [t,y,dy] = eulerapp(ode,tspan,initState,dt,ds)
     t = tspan(1):dt*ds:tspan(2); % time vector
     NT = length(t); % number of data points
     NV = length(initState); % number of values in function
-
+    
     % preallocate
     y = zeros(NT,NV);
     dy = zeros(NT-1,NV);
