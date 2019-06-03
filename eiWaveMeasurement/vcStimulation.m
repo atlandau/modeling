@@ -20,27 +20,27 @@ NT = length(out.tvec);
 
 
 % Synaptic Parameters
-enPrms = lnprm(exc.excNumberMean,exc.excNumberVar); % Excitatory Number - LN Parameters
-edPrms = lnprm(exc.excDelayMean,exc.excDelayVar); % Excitatory Delay - LN Parameters
-inPrms = lnprm(inh.inhNumberMean,inh.inhNumberVar); % Inhibitory Number - LN Parameters
-idPrms = lnprm(inh.inhDelayMean,inh.inhDelayVar); % Inhibitory Delay - LN Parameters
+enPrms = lnprm(exc.numberMean,exc.numberVar); % Excitatory Number - LN Parameters
+edPrms = lnprm(exc.delayMean,exc.delayVar); % Excitatory Delay - LN Parameters
+inPrms = lnprm(inh.numberMean,inh.numberVar); % Inhibitory Number - LN Parameters
+idPrms = lnprm(inh.delayMean,inh.delayVar); % Inhibitory Delay - LN Parameters
 
 % Generate Conductances
 eNumber = round(lognrnd(enPrms(1),enPrms(2)));
 iNumber = round(lognrnd(inPrms(1),inPrms(2)));
 % Generate timing trains, resolve to dt, add hard delay and baselineWindow
-eTrain = tprm.T/2 + exc.excHardDelay + round(lognrnd(edPrms(1),edPrms(2),[eNumber 1])/tprm.dt)*tprm.dt;
-iTrain = tprm.T/2 + inh.inhHardDelay + round(lognrnd(idPrms(1),idPrms(2),[iNumber 1])/tprm.dt)*tprm.dt;
+eTrain = tprm.T/2 + exc.hardDelay + round(lognrnd(edPrms(1),edPrms(2),[eNumber 1])/tprm.dt)*tprm.dt;
+iTrain = tprm.T/2 + inh.hardDelay + round(lognrnd(idPrms(1),idPrms(2),[iNumber 1])/tprm.dt)*tprm.dt;
 excConds = zeros(eNumber,NT);
 inhConds = zeros(iNumber,NT);
 for ne = 1:eNumber
     % Generate each conductance train and put in array 
-    cConductance = exc.excAmp * alpha(out.tvec-eTrain(ne),exc.excRise,exc.excFall);
+    cConductance = exc.excAmp * alpha(out.tvec-eTrain(ne),exc.rise,exc.fall);
     cConductance(isnan(cConductance))=0; % Values too large become nans, make them 0
     excConds(ne,:) = cConductance;
 end
 for ni = 1:iNumber
-    cConductance = inh.inhAmp * alpha(out.tvec-iTrain(ni),inh.inhRise,inh.inhFall);
+    cConductance = inh.inhAmp * alpha(out.tvec-iTrain(ni),inh.rise,inh.fall);
     cConductance(isnan(cConductance)) = 0; % Values too large become nans, make them 0
     inhConds(ni,:) = cConductance;
 end
@@ -48,8 +48,8 @@ out.eConductance = sum(excConds,1); % Sum up all conductances from each synapse
 out.iConductance = sum(inhConds,1);
 
 % Create synaptic parameters for simulation
-syn.ee = exc.excRev;
-syn.ei = inh.inhRev;
+syn.ee = exc.rev;
+syn.ei = inh.rev;
 syn.tvec = out.tvec;
 syn.ge = out.eConductance;
 syn.gi = out.iConductance;
@@ -81,8 +81,8 @@ out.estimateVoltage = holdingCenter + ...
 
 
 % Compute Currents
-out.eCurrent = syn.ge .* (out.cellVoltage - exc.excRev); % Excitatory Current
-out.iCurrent = syn.gi .* (out.cellVoltage - inh.inhRev); % Inhibitory Current
+out.eCurrent = syn.ge .* (out.cellVoltage - exc.rev); % Excitatory Current
+out.iCurrent = syn.gi .* (out.cellVoltage - inh.rev); % Inhibitory Current
 out.rCurrent = (out.cellVoltage - cellprm.em) / cellprm.rm; % resistive current
 out.cCurrent = cellprm.cm * diff(out.cellVoltage)/tprm.dt; % capacitive current
 out.cCurrent(end+1) = out.cCurrent(end); % add in relatively accurate last value
@@ -124,7 +124,7 @@ else
 end
 
 out.aWindowCenter = out.tvec(aWindowStart)+aWindowTime/2;
-aResult = zeros(aWindowSamples,NAW,2); 
+out.aResult = zeros(aWindowSamples,NAW,2); 
 out.aLine = zeros(2,NAW);
 out.estConductance = zeros(2,NAW); % Estimate of conductance [gExc; gInh]
 out.cycleConductance = zeros(2,NAW); % Average of conductance per analysis cycle
@@ -133,15 +133,15 @@ for naw = 1:NAW
     cSamples = aWindowStart(naw):aWindowStart(naw)+aWindowSamples-1;
     
     % Results --
-    aResult(:,naw,1) = out.estimateCurrent(cSamples);
-    aResult(:,naw,2) = out.estimateVoltage(cSamples);
-    out.aLine(:,naw) = [aResult(:,naw,2) ones(aWindowSamples,1)] \ aResult(:,naw,1); % Linear Regression
+    out.aResult(:,naw,1) = out.estimateCurrent(cSamples);
+    out.aResult(:,naw,2) = out.estimateVoltage(cSamples);
+    out.aLine(:,naw) = [out.aResult(:,naw,2) ones(aWindowSamples,1)] \ out.aResult(:,naw,1); % Linear Regression
     
     % Convert to Conductances (Wehr & Zador, 2003, Nature)
     % Note that this allows negative conductance... could fix?
     cgSyn = out.aLine(1,naw);
     ceSyn = -out.aLine(2,naw) / cgSyn;
-    cgi = (cgSyn*ceSyn - cgSyn*exc.excRev) / (inh.inhRev - exc.excRev);
+    cgi = (cgSyn*ceSyn - cgSyn*exc.rev) / (inh.rev - exc.rev);
     cge = cgSyn - cgi;
     out.estConductance(1,naw) = cge;
     out.estConductance(2,naw) = cgi;

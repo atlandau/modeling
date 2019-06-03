@@ -20,14 +20,14 @@ exc.excAmp = 50e-12; % S
 exc.excRev = 0e-3; % V
 exc.excNumberMean = 30;  % Mean Value
 exc.excNumberVar = 15; % Variance
-exc.excHardDelay = 5e-3;
-exc.excDelayMean = 2e-3;
+exc.excHardDelay = 5e-3; 
+exc.excDelayMean = 2e-3; 
 exc.excDelayVar = 3e-3; 
 
 inh.inhRise = 2e-3; % ms
 inh.inhFall = 7e-3; % ms
 inh.inhAmp = 50e-12; % S
-inh.inhRev = -20e-3; % V
+inh.inhRev = -70e-3; % V
 inh.inhNumberMean = 40; 
 inh.inhNumberVar = 15;
 inh.inhHardDelay = 7e-3;
@@ -35,7 +35,7 @@ inh.inhDelayMean = 2e-3;
 inh.inhDelayVar = 3e-3;
 
 % Stimulation / Analysis Parameters
-stim.vHold = -10e-3; % V
+stim.vHold = -35e-3; % V
 stim.modulationShift = -1; % 1/0 - do you flip the phase? if -1, then randomize phase
 stim.modulationDepth = 15e-3; %V
 stim.modulationPeriod = 2e-3; % s
@@ -280,7 +280,7 @@ ylabel('pA');
 title('Total Current Distribution');
 set(gca,'fontsize',16);
 
-print(f,'-painters',fullfile(spath,'simulationPlots'),'-djpeg');
+% print(f,'-painters',fullfile(spath,'simulationPlots'),'-djpeg');
 
 g = callFigs(2);
 clf;
