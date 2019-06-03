@@ -53,6 +53,7 @@ syn.ei = inh.inhRev;
 syn.tvec = out.tvec;
 syn.ge = out.eConductance;
 syn.gi = out.iConductance;
+syn.openCircuit = cellprm.openCircuit;
 
 
 % Stimulation
@@ -85,19 +86,20 @@ out.iCurrent = syn.gi .* (out.cellVoltage - inh.inhRev); % Inhibitory Current
 out.rCurrent = (out.cellVoltage - cellprm.em) / cellprm.rm; % resistive current
 out.cCurrent = cellprm.cm * diff(out.cellVoltage)/tprm.dt; % capacitive current
 out.cCurrent(end+1) = out.cCurrent(end); % add in relatively accurate last value
-synCurrent = out.eCurrent + out.iCurrent; % Total Synaptic Current
-nCurrent = stim.noiseAmplitude*randn(1,length(out.tvec)); % Noise current
-out.totalCurrent = synCurrent + nCurrent + out.rCurrent + out.cCurrent; % Total Measured Current
+out.synCurrent = out.eCurrent + out.iCurrent; % Total Synaptic Current
+out.nCurrent = stim.noiseAmplitude*randn(1,length(out.tvec)); % Noise current
+out.totalCurrent = out.synCurrent + out.nCurrent + out.rCurrent + out.cCurrent; % Total Measured Current
 
 % Do subtraction
+cyclesSkipped = 3;
 samplesPerCycle = stim.modulationPeriod/tprm.dt;
 baseCurrentNumberCycles = floor(tprm.T/2 / stim.modulationPeriod);
-baseCurrent = out.totalCurrent(samplesPerCycle+1:baseCurrentNumberCycles*samplesPerCycle);
-out.averageBaseCurrent = mean(reshape(baseCurrent,samplesPerCycle,baseCurrentNumberCycles-1),2)';
+baseCurrent = out.totalCurrent(cyclesSkipped*samplesPerCycle+1:baseCurrentNumberCycles*samplesPerCycle);
+out.averageBaseCurrent = mean(reshape(baseCurrent,samplesPerCycle,baseCurrentNumberCycles-cyclesSkipped),2)';
 numberFullCycles = floor(NT/samplesPerCycle);
 remainingSamples = NT - numberFullCycles*samplesPerCycle;
-subtractCurrent = [repmat(out.averageBaseCurrent,1,numberFullCycles), out.averageBaseCurrent(1:remainingSamples)];
-out.estimateCurrent = out.totalCurrent - subtractCurrent;
+out.subtractCurrent = [repmat(out.averageBaseCurrent,1,numberFullCycles), out.averageBaseCurrent(1:remainingSamples)];
+out.estimateCurrent = out.totalCurrent - out.subtractCurrent;
 
 % Analysis Cycles
 aWindowTime = stim.aCycles * stim.modulationPeriod; % Time of analysis window
@@ -149,9 +151,9 @@ for naw = 1:NAW
     out.residual(:,naw) = out.estConductance(:,naw) - out.cycleConductance(:,naw);
 end
 
-out.rmsError = sqrt(mean((1e9*out.residual).^2,2)); % rms error
-[~,excGOF] = fit(1e9*out.cycleConductance(1,:)',1e9*out.estConductance(1,:)','poly1'); % linear fit to get R^2
-[~,inhGOF] = fit(1e9*out.cycleConductance(2,:)',1e9*out.estConductance(2,:)','poly1'); % linear fit to get R^2
+out.rmsError = sqrt(mean((1e9*out.residual(round(end/2):end)).^2,2)); % rms error
+[~,excGOF] = fit(1e9*out.cycleConductance(1,round(end/2):end)',1e9*out.estConductance(1,round(end/2):end)','poly1'); % linear fit to get R^2
+[~,inhGOF] = fit(1e9*out.cycleConductance(2,round(end/2):end)',1e9*out.estConductance(2,round(end/2):end)','poly1'); % linear fit to get R^2
 out.excr2 = excGOF.rsquare;
 out.inhr2 = inhGOF.rsquare;
 

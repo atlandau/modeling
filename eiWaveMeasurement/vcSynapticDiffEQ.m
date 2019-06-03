@@ -16,6 +16,7 @@ function dv = vcSynapticDiffEQ(t,vm,p,syn)
 %   - syn.tvec = time vector of corresponding conductances in syn.ge/gi
 %   - syn.ge = excitatory conductance as function of tvec
 %   - syn.gi = inhibitory conductance as function of tvec
+%   - syn.openCircuit = boolean to open the effect of conductance on vm
 %   - *** -
 %     synaptic conductances are sometimes stochastic so there isn't an
 %     obvious way to pass an inline function through, this method uses a
@@ -58,16 +59,22 @@ if numel(syn.tvec) ~= numel(syn.ge) || numel(syn.tvec) ~= numel(syn.gi)
     error('Synaptic time vector (syn.tvec) has to be same size as synaptic conductances (syn.ge, syn.gi)');
 end
 
+openCircuit = 1;
+if isfield(syn,'openCircuit')
+    if logical(syn.openCircuit)
+        openCircuit=0;
+    end
+end
+
 tIndex = find(syn.tvec >= t,1);
 cge = syn.ge(tIndex);
 cgi = syn.gi(tIndex);
 
 Irs = (p.vc(t) - vm)/p.rs;
 Irm = (vm-p.em)/p.rm;
-Ige = (vm-syn.ee)*cge;
-Igi = (vm-syn.ei)*cgi;
+Ige = (vm-syn.ee)*cge * openCircuit;
+Igi = (vm-syn.ei)*cgi * openCircuit;
 
 dv =  (Irs - Irm - Ige - Igi) / p.cm;
-
 
 
