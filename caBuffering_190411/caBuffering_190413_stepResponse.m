@@ -160,7 +160,7 @@ initState = [50e-9; 150e-6; zeros(8,1)];
 
 dt = 1e-6;
 T = 5;
-[t,y,d] = eulerapp(@(t,y) calmodulinModel_HoldCalcium(t,y,p),[0 T],initState,dt);
+[t,y] = eulerapp(@(t,y) calmodulinModel_HoldCalcium(t,y,p),[0 T],initState,dt);
 
 
 f = figure;

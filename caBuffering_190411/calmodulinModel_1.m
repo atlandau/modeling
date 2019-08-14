@@ -33,7 +33,7 @@ function dydt = calmodulinModel_1(t,y,ica,p)
 %y(9) = N1_C2
 %y(10) = N2_C2
 
-  
+restCurrent = prms(
 
 % On/Off reactions with calmodulin
 C0_on = 2*p.konTC * cafree * y(2:4); %[00,10,20]
