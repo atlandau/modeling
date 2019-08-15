@@ -1,10 +1,11 @@
-function dydt = camODE(t,y,iCalciumAmp,systemPrms,camPrms)
+function dydt = camODE_wFluor(t,y,iCalciumAmp,systemPrms,camPrms,fluorPrms)
 % dydt = calmodulinModel_1(t,y,c,p)
 % 
 % t is time (which is irrelevant because this process is memoryless)
 % y is the data 
 %   y(1): [Ca]free -- concentration free calcium in cell
 %   y(2:10): [CaM] in each group [00;10;20;01;11;21;02;12;22]
+%   y(11): [CaFB] -- concentration calcium bound to fluorescent buffer
 %
 % systemPrms provides parameters required for computation
 %   systemPrms.v is volume of compartment
@@ -21,6 +22,10 @@ function dydt = camODE(t,y,iCalciumAmp,systemPrms,camPrms)
 %   camPrms.koffTN
 %   camPrms.koffRN
 %
+% fluorPrms provide fluorescent buffer parameters
+%   fluorPrms.kon is association rate of buffer
+%   fluorPrms.koff is dissociation rate of buffer
+%   fluorPrms.bconc is the total concentration of the buffer
 % 
 
 %y(1) = cafree
@@ -34,6 +39,8 @@ function dydt = camODE(t,y,iCalciumAmp,systemPrms,camPrms)
 %y(8) = N0_C2
 %y(9) = N1_C2
 %y(10) = N2_C2
+% -------
+%y(11) = fluorBound2Calcium
 
 % Calcium current stuff
 restCurrent = systemPrms.beta * systemPrms.rest;
@@ -56,12 +63,17 @@ cLobeTransitions = [-C0_on + C1_off, C0_on - C1_off - C1_on + C2_off, C1_on - C2
 nLobeTransitions = [-N0_on + N1_off, N0_on - N1_off - N1_on + N2_off, N1_on - N2_off]';
 transitionMatrix = cLobeTransitions + nLobeTransitions;
 
+% Fluorescent Buffer Reaction
+fluorAssociation = y(1)*(fluorPrms.bt - y(11))*fluorPrms.kon;
+fluorDissociation = y(11)*fluorPrms.koff;
+fluorExchange = fluorAssociation - fluorDissociation;
+
 % Calcium Movement
 calciumToCaM = sum(C0_on + C1_on + N0_on + N1_on - C1_off - C2_off - N1_off - N2_off);
-dCalcium = curr - extrusion - calciumToCaM;
+dCalcium = curr - extrusion - calciumToCaM - fluorExchange;
 
 %Output
-dydt = [dCalcium; transitionMatrix(:)];
+dydt = [dCalcium; transitionMatrix(:); fluorExchange];
 
 
 
