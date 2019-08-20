@@ -8,7 +8,7 @@
 hpath = '/Users/landauland/Documents/Research/SabatiniLab/modeling/caBuffering_RecreateExperimentalData';
 fpath = fullfile(hpath,'figures');
 
-% Spine Parameters
+% Spine Parameters4
 systemPrms.beta=1400.0;
 systemPrms.rest=5.0e-8;
 systemPrms.ks=20.0;
