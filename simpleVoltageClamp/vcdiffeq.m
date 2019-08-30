@@ -42,8 +42,6 @@ function dv = vcdiffeq(t,vm,p)
 % dVm/dt = (Vc/Rs - Vm/Rs - Vm/Rm + Em/Rm)/Cm
 
 
-
-
 dv = (p.vc(t)/p.rs - vm/p.rs - vm/p.rm + p.em/p.rm)/p.cm;
 
 
