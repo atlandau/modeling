@@ -1,31 +1,4 @@
 
-sprm.rp = 10e6;
-sprm.rm = 100e6;
-sprm.em = -70e-3;
-sprm.cm = 150e-12;
-sprm.vc = @(t) sprm.em + 10e-3.*(t>=5e-3).*(t<=25e-3); % inline function giving voltage step
-
-tspan = [0 0.1];
-
-vrest = sprm.em;
-odeOptions = odeset('AbsTol',1e-8,'RelTol',1e-8);
-odeProblem = @(t,v) vcSoma(t,v,sprm);
-[t,v] = ode23s(odeProblem,tspan,vrest,odeOptions);
-dv = vcSoma(t,v,sprm);
-curr = (sprm.vc(t) - v) / sprm.rp;
-
-figure(1); clf;
-subplot(2,1,1);
-plot(1e3*t,1e3*v,'k');
-ylabel('Membrane Potential (mV)');
-set(gca,'fontsize',16);
-
-subplot(2,1,2);
-plot(1e3*t,1e12*curr,'r');
-xlabel('Time (ms)');
-ylabel('VC Current (pA)');
-set(gca,'fontsize',16);
-
 
 %% Soma + Dendrite
 sdprm.rp = 10e6;
@@ -38,71 +11,33 @@ sdprm.cd = 100e-12;
 sdprm.ed = -70e-3;
 sdprm.vc = @(t) sdprm.es + 10e-3.*(t>=5e-3).*(t<=25e-3); % inline function giving voltage step
 
+tspan = [0 0.05];
+
 vrest = [sdprm.es sdprm.ed];
-odeOptions = odeset('AbsTol',1e-10,'RelTol',1e-10);
+odeOptions = odeset('AbsTol',1e-6,'RelTol',1e-6);
 odeProblem = @(t,v) vcSomaDendrite(t,v,sdprm);
 [t,v] = ode23s(odeProblem,tspan,vrest,odeOptions);
-curr = (sdprm.vc(t) - v(1)) / sdprm.rp;
+curr = (sdprm.vc(t) - v(:,1)) / sdprm.rp;
 
 figure(1); clf;
-subplot(2,1,1);
-plot(1e3*t,1e3*v);
+subplot(3,1,1);
+plot(1e3*t,1e3*v,'linewidth',1.5);
 ylabel('Membrane Potential (mV)');
 set(gca,'fontsize',16);
 
-subplot(2,1,2);
-plot(1e3*t,1e12*curr,'r');
+subplot(3,1,2);
+plot(1e3*t,1e12*curr,'color','r','linewidth',1.5);
 xlabel('Time (ms)');
 ylabel('VC Current (pA)');
 set(gca,'fontsize',16);
 
+subplot(3,1,3);
+plot(1e3*t,1e3*sdprm.vc(t),'color','r','linewidth',1.5);
+xlabel('Time (ms)');
+ylabel('V Command');
+set(gca,'fontsize',16);
 
-
-
-%% ODEs
-function dv = vcSoma(t,vm,p)
-    % dv = vcSoma(t,vm,p)
-    %
-    % t is time in ms
-    % vm is the membrane potential in volts
-    % p is the parameter structure
-    %   - p.rp = access resistance
-    %   - p.rm = input resistance
-    %   - p.cm = capacitance
-    %   - p.em = rest potential
-    %   - p.vc = inline for time-dependent change
-    %
-    % Differential equation describing voltage clamp circuit
-    % 
-    %            -
-    %           ---  
-    %            |
-    %           Ivc
-    %            |  ------ - ---------------- Vc
-    %            Rp
-    %            |
-    %    ----------------- - ---------------- Vm
-    %    |               |
-    %    Rm              |
-    %    |               Cm
-    %    Em              |
-    %    |               |
-    %    ----------------- - ---------------- Ground
-    %            |
-    %           ---
-    %            -
-    %
-    % -- the equations --
-    % Irs = Irm + Icm         |    KCL
-    %
-    % Irs = (Vc - Vm) / Rp    |    Ivc = Irs
-    % Irm = (Vm-Em)/Rm
-    % Icm = Cm * dVm/dt
-    %  
-    % dVm/dt = (Vc/Rp - Vm/Rs - Vm/Rm + Em/Rm)/Cm
-    dv = (p.vc(t)/p.rp - vm/p.rp - vm/p.rm + p.em/p.rm)/p.cm;
-end
-
+%% Soma + Dendrite
 function dv = vcSomaDendrite(t,v,prm)
     % dv = vcSomaDendrite(t,v,prm)
     %
@@ -145,9 +80,9 @@ function dv = vcSomaDendrite(t,v,prm)
     % 
     % dVs/dt = (Vh-Vs)/CsRp - Vs/CsRs - (Vs-Vd)/CsRa
     % dVd/dt = (Vs-Vd)/CdRa - Vd/CdRd
-    dvs = ((v(1) - prm.vc(t))/prm.rp + (prm.es - v(1))/prm.rs + (v(2)-v(1))/prm.ra)/prm.cs;
-    dvd = ((v(1) - v(2))/prm.ra + (prm.ed - v(2))/prm.rd)/prm.cd;
-    dv = [dvs; dvd]; 
+    cdvs = (prm.vc(t) - v(1))/prm.rp - (v(1) - prm.es)/prm.rs - (v(1)-v(2))/prm.ra;
+    cdvd = (v(1) - v(2))/prm.ra - (v(2) - prm.ed)/prm.rd;
+    dv = [cdvs/prm.cs; cdvd/prm.cs]; 
 end
 
 
