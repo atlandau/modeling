@@ -1,30 +1,37 @@
 
-
-[odeCellModel,cellMorph,cellTable,cStructure] = generateCell();
+[odeCellModel,cellMorph,cellStructure,compStructure] = generateCell();
 NC = size(odeCellModel.physPrm,1);
 iState = odeCellModel.physPrm(:,2);
 
 tolerance = 1e-6;
 odeOptions = odeset('AbsTol',tolerance,'RelTol',tolerance);
 
-tspan = [0 0.2];
+tspan = [0 0.05];
 odeProblem = @(t,y) odeCellFunction(t,y,odeCellModel);
 [t,v] = ode23s(odeProblem,tspan,iState,odeOptions);
 
 
-%%
-idxSpines = cellTable(2,:)==2;
-idxSpineCompartment = cell2mat(cStructure(3,idxSpines));
-idxParent = cell2mat(cStructure(4,idxSpines));
+
+
+%
+idxSpines = find(cellStructure.type==2);
+idxSpineCompartment = cell2mat(compStructure.gci(idxSpines));
+idxParent = cell2mat(compStructure.parent(idxSpines));
 
 figure(1); clf;
 set(gcf,'units','normalized','outerposition',[0.3 0.64 0.60 0.34]);
 
-%subplot(1,3,1); 
+subplot(1,2,1); 
 hold on;
-plot(1000*t,1000*v(:,idxSpineCompartment),'color','k','linewidth',1.5);
-plot(1000*t,1000*v(:,idxParent),'color','r','linewidth',1.5);
+plot(1000*t,1000*v(:,idxSpineCompartment(1)),'color','k','linewidth',1.5);
+plot(1000*t,1000*v(:,idxParent(1)),'color','r','linewidth',1.5);
+title(compStructure.name{idxSpines(1)});
 
+subplot(1,2,2); 
+hold on;
+plot(1000*t,1000*v(:,idxSpineCompartment(2)),'color','k','linewidth',1.5);
+plot(1000*t,1000*v(:,idxParent(2)),'color','r','linewidth',1.5);
+title(compStructure.name{idxSpines(2)});
 
 
 %%
