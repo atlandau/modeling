@@ -14,6 +14,7 @@ systemPrms.rest=5.0e-8;
 systemPrms.ks=20.0;
 systemPrms.v=(4/3)*pi*0.7^3*1e-15;
 iCalciumAmp = 21e-12; 
+systemPrms.amp = iCalciumAmp;
 
 u0 = systemPrms.rest;
 tspan = [0,0.5];
@@ -22,7 +23,7 @@ tvec = tspan(1):dt:tspan(2);
 
 % Instant Solution
 odeOptions = odeset('RelTol',1e-10,'AbsTol',1e-10);%,'MaxStep',dt);
-[trueTime,trueSol] = ode23s(@(t,y) instantBufferDynamics(t,y,systemPrms,iCalciumAmp),tspan,u0,odeOptions);
+[trueTime,trueSol] = ode23s(@(t,y) instantBufferDynamics(t,y,systemPrms),tspan,u0,odeOptions);
 plot(trueTime,trueSol);
 
 
