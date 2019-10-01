@@ -1,4 +1,4 @@
-function [odeCellModel,cellMorph,cellStructure,compStructure] = generateCell(cellMorph,membranePhys,dx)
+function [odeModel,cellMorph,cellStructure,compStructure] = generateCell(cellMorph,membranePhys,dx)
 %
 % -------------------------------------------------------------------------
 % cellMorph provides instructions for constructing the cell morphology
@@ -40,16 +40,56 @@ if valid~=1, disp(cellStructureValid); return, end % print message to screen if 
 compStructure = buildCompartments(cellStructure,membranePhys,dx); % build each compartment
 
 % build ode model of cell
-odeCellModel.physPrm = cell2mat(compStructure.parameters');
-odeCellModel.parent = cell2mat(compStructure.parent');
-odeCellModel.daughters = matricizeFromCell(compStructure.daughters,0);
-odeCellModel.synapse = matricizeFromCell(compStructure.synapse,1);
-odeCellModel.voltageClamp = matricizeFromCell(compStructure.voltageClamp,1);
-odeCellModel.vcAccess = cell2mat(compStructure.vcAccess');
-odeCellModel.currentClamp = matricizeFromCell(compStructure.currentClamp,1);
+odeModel = buildOdeModel(compStructure);
 
 end
 
+
+%% build ode model of cell
+function odeModel = buildOdeModel(compStructure)
+    % build ode model of vectorized and parameterized components
+    % designed to optimize "odeCellFunction" 
+    
+    odeModel.physPrm = cell2mat(compStructure.parameters');
+    odeModel.parent = cell2mat(compStructure.parent');
+    odeModel.parentIdx = ~isnan(odeModel.parent);
+    
+    [odeModel.daughters,odeModel.daughtersIdx] = matricizeFromCell(compStructure.daughters,0);
+    
+    [synapticParameters,odeModel.synapseIdx] = matricizeFromCell(compStructure.synapse,1);
+    [voltageClamp,odeModel.vcIdx] = matricizeFromCell(compStructure.voltageClamp,1);
+    odeModel.access = matricizeFromCell(compStructure.vcAccess,0); % didn't check this one
+    [currentClamp,odeModel.ccIdx] = matricizeFromCell(compStructure.currentClamp,1);
+    
+    % Optimize Synaptic Functions
+    conductance = @(t,gpeak,tpeak,tstart) ...
+        ((t-tstart)>0).* gpeak .*exp(1)/tpeak.*(t-tstart).*exp(-(t-tstart)./(tpeak-tstart));
+    
+    NS = size(odeModel.synapseIdx,2);
+    odeModel.synConductance = cell(1,NS);
+    odeModel.synReversal = cell(1,NS);
+    for ns = 1:NS
+        % Using a preallocated anonymous function gives 3x speedup
+        odeModel.synConductance{ns} = @(t) cellfun(@(c) conductance(t,c(2),c(3),c(4)),synapticParameters{ns},'uni',1);
+        odeModel.synReversal{ns} = cellfun(@(c) c(1), synapticParameters{ns}, 'uni', 1);
+    end
+    
+    % Optimize Voltage Clamp Functions
+    NV = size(odeModel.vcIdx,2);
+    odeModel.voltageClamp = cell(1,NV);
+    for nv = 1:NV
+        odeModel.voltageClamp{nv} = @(t) cellfun(@(c) c(t), voltageClamp{nv}, 'uni', 1);
+    end
+    
+    % Optimize Current Clamp Functions
+    NC = size(odeModel.ccIdx,2);
+    odeModel.currentClamp = cell(1,NC);
+    for nc = 1:NC
+        odeModel.currentClamp{nc} = @(t) cellfun(@(c) c(t), currentClamp{nc}, 'uni', 1);
+    end
+    
+    odeModel.allocateCurrent = zeros(size(odeModel.physPrm,1),1);
+end
 
 
 %% build compartment structure for cell
@@ -173,7 +213,7 @@ function compStructure = buildCompartments(cellStructure,membranePhys,dx)
                             compStructure.synapse{nc}{1}{end+1} = cellStructure.synapse(alink);
                         case 11
                             compStructure.voltageClamp{nc}{1}{end+1} = cellStructure.voltageClamp(alink);
-                            compStructure.vcAccess{nc} = cellStructure.vcAccess(alink);
+                            compStructure.vcAccess{nc}(end+1) = cellStructure.vcAccess{alink};
                         case 12
                             compStructure.currentClamp{nc}{1}{end+1} = cellStructure.currentClamp(alink);
                     end
@@ -189,7 +229,7 @@ function compStructure = buildCompartments(cellStructure,membranePhys,dx)
                 compStructure.daughters{nc} = cell(numCompartments(nc),1);
                 compStructure.synapse{nc} = cell(numCompartments(nc),1);
                 compStructure.voltageClamp{nc} = cell(numCompartments(nc),1);
-                compStructure.vcAccess{nc} = nan(numCompartments(nc),1);
+                compStructure.vcAccess{nc} = cell(numCompartments(nc),1);
                 compStructure.currentClamp{nc} = cell(numCompartments(nc),1);
                 for nmc = 1:numCompartments(nc)
                     % Parent compartments
@@ -233,11 +273,12 @@ function compStructure = buildCompartments(cellStructure,membranePhys,dx)
                                 compStructure.synapse{nc}{nmc}{end+1} = cellStructure.synapse(alink);
                             case 11
                                 compStructure.voltageClamp{nc}{nmc}{end+1} = cellStructure.voltageClamp(alink);
-                                compStructure.vcAccess{nc}{nmc}(end+1) = cellStructure.vcAccess(alink);
+                                compStructure.vcAccess{nc}{nmc}(end+1) = cellStructure.vcAccess{alink};
                             case 12
                                 compStructure.currentClamp{nc}{nmc}{end+1} = cellStructure.currentClamp(alink);
                         end
                     end
+                    if isempty(compStructure.vcAccess{nc}{nmc}), compStructure.vcAccess{nc}{nmc} = nan; end
                 end
                 
             case 2 % spine
@@ -268,7 +309,8 @@ function compStructure = buildCompartments(cellStructure,membranePhys,dx)
                             compStructure.synapse{nc}{1}{end+1} = cellStructure.synapse(alink);
                         case 11
                             compStructure.voltageClamp{nc}{1}{end+1} = cellStructure.voltageClamp(alink);
-                            compStructure.vcAccess{nc} = cellStructure.vcAccess(alink);
+                            %compStructure.vcAccess{nc}{1}{end+1} = cellStructure.vcAccess(alink);
+                            compStructure.vcAccess{nc}(end+1) = cellStructure.vcAccess{alink};
                         case 12
                             compStructure.currentClamp{nc}{1}{end+1} = cellStructure.currentClamp(alink);
                     end
@@ -356,15 +398,18 @@ function [valid,cellStructureValid] = checkCellStructure(cellStructure)
         msg = ['Compartments (',sprintf('%d ',find(linkTooFar)),') link too far on parent compartment'];
         cellStructureValid = [cellStructureValid{:}, {msg}];
     end
+    
     % Disconnected 
     fprintf(2,'NOTE THAT the disconnected check might be buggy\n');
-    nonNegativeLink = cellStructure.link;
+    idxSomaDendrites = cellStructure.type==0 | cellStructure.type==1;
+    NTC = sum(idxSomaDendrites);
+    nonNegativeLink = cellStructure.link(idxSomaDendrites);
     nonNegativeLink(nonNegativeLink<0)=cellStructure.morphid(nonNegativeLink<0);
-    morphids = cellStructure.morphid;
+    morphids = cellStructure.morphid(idxSomaDendrites);
     [~,idxID] = ismember(morphids,morphids);
     [~,nnLinkIdx] = ismember(nonNegativeLink,morphids);
     pairs = [idxID; idxID(nnLinkIdx)]';
-    G = accumarray(cat(1, pairs, fliplr(pairs)),1,[NC NC]) + eye(NC);
+    G = accumarray(cat(1, pairs, fliplr(pairs)),1,[NTC NTC]) + eye(NTC);
     if ~checkc(G)
         valid = 0;
         cellStructureValid = [cellStructureValid{:}, {'Neural Morphology is not connected'}]; 
@@ -394,7 +439,7 @@ function cellStructure = constructCellStructure(cellMorph)
     cellStructure.location = default;
     cellStructure.synapse = defCell;
     cellStructure.voltageClamp = defCell;
-    cellStructure.vcAccess = default;
+    cellStructure.vcAccess = defCell;
     cellStructure.currentClamp = defCell;
     
     for nmc = 1:NMC
@@ -425,7 +470,7 @@ function cellStructure = constructCellStructure(cellMorph)
             case 11 % voltage-clamp
                 % inline function describing voltage clamp as vc(t)
                 cellStructure.voltageClamp{nmc} = cComp.vcCommand;
-                cellStructure.vcAccess(nmc) = cComp.vcAccess;
+                cellStructure.vcAccess{nmc} = cComp.vcAccess;
             case 12 % current-clamp
                 % inline function describing current clamp as cc(t)
                 cellStructure.currentClamp{nmc} = cComp.ccCommand;
@@ -434,7 +479,7 @@ function cellStructure = constructCellStructure(cellMorph)
 end
 
 %% Matricize cell
-function mat = matricizeFromCell(C,keepCell)
+function [compressedMat,idx,mat] = matricizeFromCell(C,keepCell)
     mat = cellfun(@(c) c(:)', C, 'uni', 0);
     mat = [mat{:}]';
     maxMat = max(cellfun(@length, mat, 'uni', 1));
@@ -450,8 +495,17 @@ function mat = matricizeFromCell(C,keepCell)
             end
         end
         mat = out;
+        idx = cellfun(@(c) ~isempty(c), mat, 'uni', 1);
     else
         mat = cell2mat(cellfun(@(c) [c, nan(1, maxMat-length(c))], mat, 'uni', 0));
+        idx = ~isnan(mat);
+    end
+    
+    % Compress Matrix
+    NC = size(idx,2);
+    compressedMat = cell(1,NC);
+    for nc = 1:NC
+        compressedMat{nc} = mat(idx(:,nc),nc);
     end
 end
 

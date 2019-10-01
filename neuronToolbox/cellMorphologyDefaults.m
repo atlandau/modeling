@@ -89,48 +89,48 @@ defaultCell.spine2.link = 9;
 defaultCell.spine2.location = 15;
 
 % Voltage-Clamp
-% defaultCell.vc1.morphid = 12;
-% defaultCell.vc1.type = 11;
-% defaultCell.vc1.link = 0;
-% defaultCell.vc1.vcAccess = 10e6;
-% defaultCell.vc1.vcCommand = @(t) ((t>=0)&(t<0.02))*-0.06 + ((t<0)|(t>=0.02))*-0.07;
+defaultCell.vc1.morphid = 12;
+defaultCell.vc1.type = 11;
+defaultCell.vc1.link = 0;
+defaultCell.vc1.vcAccess = 10e6;
+defaultCell.vc1.vcCommand = @(t) ((t>=0)&(t<0.02))*-0.06 + ((t<0)|(t>=0.02))*-0.07;
 
 
-% % Current-Clamp
-% defaultCell.cc1.morphid = 13;
-% defaultCell.cc1.type = 12;
-% defaultCell.cc1.link = 0;
-% defaultCell.cc1.location = 15;
-% defaultCell.cc1.ccCommand = @(t) 0; %0.0001e-12;
+% Current-Clamp
+defaultCell.cc1.morphid = 13;
+defaultCell.cc1.type = 12;
+defaultCell.cc1.link = 9;
+defaultCell.cc1.location = 15;
+defaultCell.cc1.ccCommand = @(t) 100e-12; %0.0001e-12;
 
  
 % Synapses
 defaultCell.synapse1.morphid = 14;
 defaultCell.synapse1.type = 3;
 defaultCell.synapse1.link = 10;
-defaultCell.synapse1.properties = [0, 100e-12, 0.0005, 0];
+defaultCell.synapse1.properties = [0, 1e-9, 0.101, 0.1];
 
-% defaultCell.synapse2.morphid = 15;
-% defaultCell.synapse2.type = 3;
-% defaultCell.synapse2.link = 11;
-% defaultCell.synapse2.properties = [0, 1e-9, 0.012, 0.1];
-% 
-% defaultCell.synapse3.morphid = 16;
-% defaultCell.synapse3.type = 3;
-% defaultCell.synapse3.link = 11;
-% defaultCell.synapse3.properties = [-0.07, 1e-9, 0.102];
-% 
-% defaultCell.synapse4.morphid = 17;
-% defaultCell.synapse4.type = 3;
-% defaultCell.synapse4.link = 1;
-% defaultCell.synapse4.location = 10;
-% defaultCell.synapse4.properties = [-0.07, 1e-9, 0.102];
-% 
-% defaultCell.synapse5.morphid = 18;
-% defaultCell.synapse5.type = 3;
-% defaultCell.synapse5.link = 1;
-% defaultCell.synapse5.location = 10;
-% defaultCell.synapse5.properties = [0, 1e-9, 0.1];
+defaultCell.synapse2.morphid = 15;
+defaultCell.synapse2.type = 3;
+defaultCell.synapse2.link = 11;
+defaultCell.synapse2.properties = [0, 1e-9, 0.101, 0.1];
+
+defaultCell.synapse3.morphid = 16;
+defaultCell.synapse3.type = 3;
+defaultCell.synapse3.link = 11;
+defaultCell.synapse3.properties = [-0.07, 1e-9, 0.103, 0.1];
+
+defaultCell.synapse4.morphid = 17;
+defaultCell.synapse4.type = 3;
+defaultCell.synapse4.link = 1;
+defaultCell.synapse4.location = 50;
+defaultCell.synapse4.properties = [-0.07, 1e-9, 0.103, 0.1];
+
+defaultCell.synapse5.morphid = 18;
+defaultCell.synapse5.type = 3;
+defaultCell.synapse5.link = 1;
+defaultCell.synapse5.location = 50;
+defaultCell.synapse5.properties = [0, 1e-9, 0.101, 0.1];
 
 
 

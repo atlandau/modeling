@@ -12,23 +12,11 @@ cellMorphology.amain.length = 20000;
 cellMorphology.amain.link = 0;
 cellMorphology.amain.location = 0;
 
-% cellMorphology.cc.morphid = 2;
-% cellMorphology.cc.type = 12;
-% cellMorphology.cc.link = 1;
-% cellMorphology.cc.location = 10000;
-% cellMorphology.cc.ccCommand = @(t) 100e-12;
-
-cellMorphology.spine1.morphid = 3;
-cellMorphology.spine1.type = 2;
-cellMorphology.spine1.diameter = 0.8;
-cellMorphology.spine1.rneck = 250e6;
-cellMorphology.spine1.link = 1;
-cellMorphology.spine1.location = 10000;
-
-cellMorphology.synapse1.morphid = 4;
-cellMorphology.synapse1.type = 3;
-cellMorphology.synapse1.link = 3;
-cellMorphology.synapse1.properties = [0, 2e-9, 0.001, 0];
+cellMorphology.cc.morphid = 2;
+cellMorphology.cc.type = 12;
+cellMorphology.cc.link = 1;
+cellMorphology.cc.location = 10000;
+cellMorphology.cc.ccCommand = @(t) 100e-12;
 
 
 dx = 50;
@@ -39,7 +27,7 @@ iState = odeCellModel.physPrm(:,2);
 tolerance = 1e-6;
 odeOptions = odeset('AbsTol',tolerance,'RelTol',tolerance);
 
-tspan = [0 0.01];
+tspan = [0 0.1];
 odeProblem = @(t,y) odeCellFunction(t,y,odeCellModel);
 [t,v] = ode45(odeProblem,tspan,iState,odeOptions);
 
@@ -90,6 +78,7 @@ cellMorphology.synapse1.type = 3;
 cellMorphology.synapse1.link = 3;
 cellMorphology.synapse1.properties = [0, 2e-9, 0.001, 0];
 
+profile on;
 
 dx = 50;
 odeCellModel = generateCell(cellMorphology,[],dx);
@@ -99,9 +88,11 @@ iState = odeCellModel.physPrm(:,2);
 tolerance = 1e-6;
 odeOptions = odeset('AbsTol',tolerance,'RelTol',tolerance);
 
-tspan = [0 0.005];
+tspan = [0 0.01];
 odeProblem = @(t,y) odeCellFunction(t,y,odeCellModel);
 [t,v] = ode45(odeProblem,tspan,iState,odeOptions);
+
+profile viewer;
 
 
 figure(1); clf;
