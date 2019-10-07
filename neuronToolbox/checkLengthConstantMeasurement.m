@@ -18,6 +18,7 @@ cellMorphology.cc.link = 1;
 cellMorphology.cc.location = 10000;
 cellMorphology.cc.ccCommand = @(t) 100e-12;
 
+profile on;
 
 dx = 50;
 odeCellModel = generateCell(cellMorphology,[],dx);
@@ -31,6 +32,7 @@ tspan = [0 0.1];
 odeProblem = @(t,y) odeCellFunction(t,y,odeCellModel);
 [t,v] = ode45(odeProblem,tspan,iState,odeOptions);
 
+profile viewer;
 
 figure(1); clf;
 set(gcf,'units','normalized','outerposition',[0.3 0.64 0.60 0.34]);
