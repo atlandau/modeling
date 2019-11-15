@@ -1,4 +1,6 @@
 function dv = odeCellFunction(t,v,odeModel)
+% persistent stepTime iteration
+% fprintf(1,'%.2f\n',1000*t);
 
 cdv = odeModel.allocateCurrent;
 

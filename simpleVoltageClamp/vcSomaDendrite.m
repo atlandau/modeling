@@ -1,18 +1,15 @@
 function dv = vcSomaDendrite(t,v,prm)
-% dv = vcSomaDendrite(t,v,prm)
-%
-% t is time in s
-% v is the membrane potential in volts
+% t is time in ms
+% vm is the membrane potential in volts
 % prm is the parameter structure
-%   - prm.rp = access resistance
+%   - prm.rp = access
 %   - prm.rs = soma resistance
 %   - prm.cs = soma capacitance
 %   - prm.es = soma reversal
-%   - prm.ra = axial resistance
 %   - prm.rd = dendrite resistance
 %   - prm.cd = dendrite capacitance
 %   - prm.ed = dendrite reversal
-%   - prm.vc = inline equation for time-dependent change of holding voltage
+%   - prm.vc = inline for time-dependent change
 %
 % Differential equations describing voltage clamp circuit
 %            -
@@ -32,12 +29,13 @@ function dv = vcSomaDendrite(t,v,prm)
 %            |                                   |
 %           ---                                 ---
 %            -                                   -
-% -- the equations --
-% Irp = Irm + Icm + Ira        |    KCL
+% Irp = Irs + Ics + Ira
 % Ira = Ird + Icd
-% dVs/dt = (Vh-Vs)/CsRp - Vs/CsRs - (Vs-Vd)/CsRa
-% dVd/dt = (Vs-Vd)/CdRa - Vd/CdRd
-
-cdvs = (prm.vc(t) - v(1))/prm.rp - (v(1) - prm.es)/prm.rs - (v(1)-v(2))/prm.ra;
-cdvd = (v(1) - v(2))/prm.ra - (v(2) - prm.ed)/prm.rd;
-dv = [cdvs/prm.cs; cdvd/prm.cs]; 
+% Cs * dVs/dt = (Vh-Vs)/Rp - (Vs-Es)/Rs - (Vs-Vd)/Ra
+% Cd * dVd/dt = (Vs-Vd)/Ra - (Vd-Ed)/Rd
+holdVoltage = prm.vc(t);
+somaVoltage = v(1);
+dendVoltage = v(2);
+cdvs = (holdVoltage-somaVoltage)/prm.rp - (somaVoltage-prm.es)/prm.rs - (somaVoltage-dendVoltage)/prm.ra; % soma 
+cdvd = (somaVoltage-dendVoltage)/prm.ra - (dendVoltage-prm.ed)/prm.rd; % dendrite
+dv = [cdvs/prm.cs; cdvd/prm.cd]; 

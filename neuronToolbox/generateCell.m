@@ -54,7 +54,12 @@ function odeModel = buildOdeModel(compStructure)
     odeModel.parent = cell2mat(compStructure.parent');
     odeModel.parentIdx = ~isnan(odeModel.parent);
     
-    [odeModel.daughters,odeModel.daughtersIdx] = matricizeFromCell(compStructure.daughters,0);
+%     if numel(odeModel.parentIdx)==1
+%         odeModel.daughters=nan; 
+%         odeModel.daughtersIdx=false; 
+%     else
+        [odeModel.daughters,odeModel.daughtersIdx] = matricizeFromCell(compStructure.daughters,0);
+%     end
     
     [synapticParameters,odeModel.synapseIdx] = matricizeFromCell(compStructure.synapse,1);
     [voltageClamp,odeModel.vcIdx] = matricizeFromCell(compStructure.voltageClamp,1);
@@ -63,7 +68,7 @@ function odeModel = buildOdeModel(compStructure)
     
     % Optimize Synaptic Functions
     conductance = @(t,gpeak,tpeak,tstart) ...
-        ((t-tstart)>0).* gpeak .*exp(1)/tpeak.*(t-tstart).*exp(-(t-tstart)./(tpeak-tstart));
+        ((t-tstart)>0).* gpeak .*exp(1)/tpeak.*(t-tstart).*exp(-(t-tstart)./tpeak);
     
     NS = size(odeModel.synapseIdx,2);
     odeModel.synConductance = cell(1,NS);
@@ -463,8 +468,8 @@ function cellStructure = constructCellStructure(cellMorph)
             case 2 % spine
                 cellStructure.rneck(nmc) = cComp.rneck;
             case 3 % synapse
-                % 3 component vector giving:
-                % [reversal potential, peak conductance, peak cond. time]
+                % 4 component vector giving:
+                % [Erev, peakConductance, peakCondTime, startConductance]
                 cellStructure.synapse{nmc} = cComp.properties; 
                 
             case 11 % voltage-clamp
@@ -482,6 +487,9 @@ end
 function [compressedMat,idx,mat] = matricizeFromCell(C,keepCell)
     mat = cellfun(@(c) c(:)', C, 'uni', 0);
     mat = [mat{:}]';
+    if ~iscell(mat) && numel(mat)==1
+        mat = {mat};
+    end
     maxMat = max(cellfun(@length, mat, 'uni', 1));
     if keepCell
         out = cell(numel(mat),maxMat);

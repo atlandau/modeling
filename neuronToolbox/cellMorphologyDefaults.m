@@ -88,6 +88,7 @@ defaultCell.spine2.rneck = 250e6;
 defaultCell.spine2.link = 9;
 defaultCell.spine2.location = 15;
 
+%{
 % Voltage-Clamp
 defaultCell.vc1.morphid = 12;
 defaultCell.vc1.type = 11;
@@ -131,7 +132,7 @@ defaultCell.synapse5.type = 3;
 defaultCell.synapse5.link = 1;
 defaultCell.synapse5.location = 50;
 defaultCell.synapse5.properties = [0, 1e-9, 0.101, 0.1];
-
+%}
 
 
 

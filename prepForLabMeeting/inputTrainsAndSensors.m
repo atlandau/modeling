@@ -131,6 +131,7 @@ iState = [restConcentration; restConcentration*kappa; iStateCaM];
 
 % AP Properties
 frequency = 1000./fliplr([3 5 7 10 15 25 50 100 125 200 10000]);
+% frequency = 1000./fliplr([10 200]);
 NF = length(frequency);
 
 msg = '';
@@ -150,32 +151,41 @@ relCalcium = pkCalcium ./ min(pkCalcium(:));
 pkCaM22 = squeeze(max(values(:,end,:),[],1));
 
 %%
+
+calciumBuffReviewPath = '~/Documents/School/NB215a-2019';
+
+xLIM = [0 150];
+
+exFreq2plot = [4 NF];
+
 figure(189); clf;
 set(gcf,'units','normalized','outerposition',[0.05 0.27 0.21 0.38]);
 hold on;
 cmap = flipud([linspace(0.1,1,NF)'.^(1/2),zeros(NF,2)]);
-for nf = NF:-1:1
+for nf = fliplr(exFreq2plot)
     plot(1e3*tvec,1e6*values(:,1,nf),'color',cmap(nf,:),'linewidth',1.5);
 end
-xlim([0 80]);
+xlim(xLIM);
 xlabel('Time (ms)');
 ylabel('[Ca^{2+}] (µM)');
 title('Calcium Influx Train APs');
 set(gca,'fontsize',18);
 % print(gcf,'-painters',fullfile(dacPath,'CaM-CalciumTraces'),'-djpeg');
+print(gcf,'-painters',fullfile(calciumBuffReviewPath,'CaM-CalciumTraces'),'-djpeg');
 
 figure(190); clf;
 set(gcf,'units','normalized','outerposition',[0.26 0.27 0.21 0.38]);
 hold on;
-for nf = NF:-1:1
+for nf = fliplr(exFreq2plot)
     plot(1e3*tvec,1e6*values(:,end,nf),'color',cmap(nf,:),'linewidth',1.5);
 end
-xlim([0 80]);
+xlim(xLIM);
 xlabel('Time (ms)');
 ylabel('[CaM]_{N2C2} (µM)');
 title('CaM Train APs');
 set(gca,'fontsize',18);
 % print(gcf,'-painters',fullfile(dacPath,'CaM-Traces'),'-djpeg');
+print(gcf,'-painters',fullfile(calciumBuffReviewPath,'CaM-Traces'),'-djpeg');
 
 figure(191); clf;
 set(gcf,'units','normalized','outerposition',[0.47 0.27 0.21 0.38]);
@@ -197,8 +207,8 @@ set(gca,'ytick',0:3:9);
 xlabel('Peak Calcium');
 ylabel('CaM N2-C2 Activation');
 set(gca,'fontsize',14);
-print(gcf,'-painters',fullfile(dacPath,'CaM-PercentActivation'),'-djpeg');
-
+% print(gcf,'-painters',fullfile(dacPath,'CaM-PercentActivation'),'-djpeg');
+print(gcf,'-painters',fullfile(calciumBuffReviewPath,'CaM-PercentActivation'),'-djpeg');
 
 figure(192); clf;
 set(gcf,'units','normalized','outerposition',[0.68 0.27 0.21 0.38]);
