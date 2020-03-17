@@ -78,6 +78,7 @@ trueInputResistance = 1/( (1/prm.rs) + (1/(prm.ra+prm.rd)));
 fprintf(1,'Estimate of access resistance: %.1f M%c (True Value: %.1f M%c)\n',1e-6*accessEstimate,937,1e-6*prm.rp,937);
 fprintf(1,'Estimate of input resistance: %.1f M%c (True Value: %.1f M%c)\n',1e-6*inputResistance,937,1e-6*trueInputResistance,937);
 fprintf(1,'Estimate of capacitance: %.1f pF (True Value: %.1f pF)\n',1e12*moreAccurateCapEstimate,1e12*prm.cs);
+fprintf(1,'Bad Estimate of capacitance: %.1f pF (True Value: %.1f pF)\n',1e12*conventionalCapEstimate,1e12*prm.cs);
 fprintf(1,'\n');
 
 
@@ -107,6 +108,52 @@ xlabel('Time (ms)');
 ylabel('mV');
 title('Voltage Command');
 set(gca,'fontsize',16);
+
+
+
+%% ------ 
+function dv = vcSomaDendrite(t,v,prm)
+    % t is time in ms
+    % vm is the membrane potential in volts
+    % prm is the parameter structure
+    %   - prm.rp = access
+    %   - prm.rs = soma resistance
+    %   - prm.cs = soma capacitance
+    %   - prm.es = soma reversal
+    %   - prm.rd = dendrite resistance
+    %   - prm.cd = dendrite capacitance
+    %   - prm.ed = dendrite reversal
+    %   - prm.vc = inline for time-dependent change
+    %
+    % Differential equations describing voltage clamp circuit
+    %            -
+    %           ---  
+    %            |
+    %           Vvc
+    %            | == Vh
+    %            Rp
+    %            |
+    % Vs == -----------------------Ra----------------------- == Vd
+    %       |            |                    |            |
+    %       Rs           |                    Rd           |
+    %       |            Cs                   |            Cd
+    %       Es           |                    Ed           |
+    %       |            |                    |            |
+    %       --------------                    -------------- 
+    %            |                                   |
+    %           ---                                 ---
+    %            -                                   -
+    % Irp = Irs + Ics + Ira
+    % Ira = Ird + Icd
+    % Cs * dVs/dt = (Vh-Vs)/Rp - (Vs-Es)/Rs - (Vs-Vd)/Ra
+    % Cd * dVd/dt = (Vs-Vd)/Ra - (Vd-Ed)/Rd
+    holdVoltage = prm.vc(t);
+    somaVoltage = v(1);
+    dendVoltage = v(2);
+    cdvs = (holdVoltage-somaVoltage)/prm.rp - (somaVoltage-prm.es)/prm.rs - (somaVoltage-dendVoltage)/prm.ra; % soma 
+    cdvd = (somaVoltage-dendVoltage)/prm.ra - (dendVoltage-prm.ed)/prm.rd; % dendrite
+    dv = [cdvs/prm.cs; cdvd/prm.cd]; 
+end
 
 
 
